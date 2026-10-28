@@ -1,25 +1,39 @@
-import { useState, useEffect, useCallback } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../config/firebase.js';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import authService from '../services/auth.service.js';
-import { setAuthToken } from '../lib/api.js';
 import { AuthContext } from './authContext.js';
 
+/**
+ * Authentication Provider for Sinka Admin Workspace.
+ *
+ * Manages 24-hour administrator JWT sessions:
+ * 1. Synchronizes login through POST /api/admin/auth/login.
+ * 2. Restores sessions on reload through GET /api/admin/auth/me.
+ * 3. Enforces single initialization to prevent duplicate verification requests or redirect loops.
+ * 4. Automatically clears invalid/expired tokens and updates application state.
+ */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Prevent duplicate initialization calls in React StrictMode
+  const hasInitialized = useRef(false);
+
   const clearError = useCallback(() => setError(null), []);
 
   /**
-   * Google OAuth login via Firebase with backend admin role validation.
+   * Primary administrator login using email and password.
+   *
+   * @param {object} credentials
+   * @param {string} credentials.email
+   * @param {string} credentials.password
+   * @returns {Promise<object>} Authenticated admin profile
    */
-  const loginWithGoogle = useCallback(async () => {
+  const login = useCallback(async ({ email, password }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const adminUser = await authService.loginWithGoogle();
+      const adminUser = await authService.login({ email, password });
       setUser(adminUser);
       return adminUser;
     } catch (err) {
@@ -32,26 +46,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   /**
-   * Direct token verification for testing, headless environments, or token paste.
-   */
-  const loginWithToken = useCallback(async (token) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const adminUser = await authService.loginWithFirebaseToken(token);
-      setUser(adminUser);
-      return adminUser;
-    } catch (err) {
-      const message = err.message || 'Token verification failed.';
-      setError(message);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  /**
-   * Terminate admin session.
+   * Terminate admin session and redirect.
    */
   const logout = useCallback(async () => {
     setIsLoading(true);
@@ -65,44 +60,46 @@ export function AuthProvider({ children }) {
   }, []);
 
   /**
-   * Automatic session restoration across page reloads via Firebase onAuthStateChanged.
-   * Securely validates with backend GET /api/auth/me and rejects non-admin users.
+   * Restore administrator session on initial page load / refresh.
    */
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          const token = await firebaseUser.getIdToken();
-          setAuthToken(token);
-          const profile = await authService.getCurrentUser(token);
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
 
-          if (profile && profile.role === 'admin') {
-            setUser(profile);
-            setError(null);
-          } else {
-            // User does not possess administrator role in MongoDB
-            await authService.logout();
-            setUser(null);
-            setError(
-              `Access denied: Account ${firebaseUser.email || ''} does not have administrator privileges.`
-            );
-          }
-        } catch (err) {
-          // If backend is unreachable or session expired
-          setAuthToken(null);
-          setUser(null);
-          if (err.status === 0) {
-            setError('Backend server unreachable. Could not synchronize administrator session.');
-          }
-        }
-      } else {
-        setAuthToken(null);
-        setUser(null);
+    async function initializeSession() {
+      // Check if a stored JWT exists
+      if (!authService.hasStoredSession()) {
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
-    });
 
-    return () => unsubscribe();
+      try {
+        const profile = await authService.getCurrentUser();
+        if (profile && profile.role === 'admin') {
+          setUser(profile);
+          setError(null);
+        } else {
+          await authService.logout();
+          setUser(null);
+          setError('Access denied: Administrator permissions required.');
+        }
+      } catch (err) {
+        // Token is expired, invalid, or server rejected it
+        await authService.logout();
+        setUser(null);
+        if (err.status === 0) {
+          setError('Backend server unreachable. Could not synchronize administrator session.');
+        } else if (err.status === 401) {
+          setError('Administrator session has expired. Please sign in again.');
+        } else if (err.status === 403) {
+          setError(err.message || 'Access denied: Administrator permissions required.');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    initializeSession();
   }, []);
 
   const value = {
@@ -111,8 +108,7 @@ export function AuthProvider({ children }) {
     isLoading,
     error,
     clearError,
-    loginWithGoogle,
-    loginWithToken,
+    login,
     logout,
   };
 

@@ -8,14 +8,12 @@ export function Header({ onOpenSidebar }) {
   const { user, logout } = useAuth();
 
   const getPageTitle = (pathname) => {
-    switch (pathname) {
-      case ROUTES.DASHBOARD:
-        return 'Dashboard';
-      case ROUTES.LOGIN:
-        return 'Authentication';
-      default:
-        return 'Admin Panel';
-    }
+    if (pathname === ROUTES.DASHBOARD) return 'Dashboard';
+    if (pathname === ROUTES.LOGIN) return 'Authentication';
+    if (pathname === ROUTES.OFFERS) return 'Promotional Offers';
+    if (pathname === ROUTES.OFFERS_NEW) return 'Create Promotional Offer';
+    if (pathname.startsWith('/offers/') && pathname.endsWith('/edit')) return 'Edit Promotional Offer';
+    return 'Admin Panel';
   };
 
   const title = getPageTitle(location.pathname);
@@ -48,7 +46,7 @@ export function Header({ onOpenSidebar }) {
         {user ? (
           <div className="flex items-center space-x-3">
             <div className="hidden sm:flex flex-col text-right">
-              <span className="text-xs font-semibold text-stone-900 truncate max-w-[180px]">
+              <span className="text-xs font-semibold text-stone-900 truncate max-w-45">
                 {user.displayName || user.email}
               </span>
               <span className="text-[10px] text-emerald-700 font-medium flex items-center justify-end space-x-1">

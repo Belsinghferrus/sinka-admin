@@ -1,125 +1,180 @@
-import { signInWithPopup, signOut } from 'firebase/auth';
-import { auth, googleProvider } from '../config/firebase.js';
-import apiClient, { setAuthToken } from '../lib/api.js';
+import apiClient, { setAuthToken, getAuthToken, clearAuthToken } from '../lib/api.js';
 
 /**
- * Authentication Service for Sinka Admin Panel.
+ * Parses the payload of a JSON Web Token without external libraries.
+ * Treat this as ADVISORY only; the backend remains the authoritative authority.
  *
- * BACKEND AUTHENTICATION CONTRACT:
- * 1. POST /api/auth/firebase-login with { idToken: string }
- *    - Verifies cryptographic signature via Firebase Admin SDK
- *    - Synchronizes or retrieves customer/admin record from MongoDB
- *    - Returns user profile including `role: 'customer' | 'admin'`
- * 2. GET /api/auth/me with Authorization: Bearer <FIREBASE_ID_TOKEN>
- *    - Retrieves the current authenticated user profile
- * 3. Protected admin endpoints enforce `requireRole('admin')`.
+ * @param {string} token - Raw JWT string
+ * @returns {object|null} Decoded JSON payload or null
  */
+export function decodeJwtPayload(token) {
+  if (!token || typeof token !== 'string') return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
 
+/**
+ * Advisory check to determine if a JWT has expired according to its `exp` claim.
+ *
+ * @param {string} token - Raw JWT string
+ * @returns {boolean} True if definitely expired locally; false otherwise
+ */
+export function isTokenExpired(token) {
+  const payload = decodeJwtPayload(token);
+  if (!payload || !payload.exp) return false;
+  // Expired if current epoch is past expiration timestamp (with 10-second skew tolerance)
+  return payload.exp * 1000 <= Date.now() + 10000;
+}
+
+/**
+ * Dedicated Authentication Service for Sinka Admin Back Office.
+ *
+ * BACKEND ADMIN AUTH CONTRACT:
+ * - POST /api/admin/auth/login with { email, password }
+ *   Issues a signed 24-hour HS256 JWT containing { adminId, email, role: 'admin' }.
+ * - GET /api/admin/auth/me with Authorization: Bearer <token>
+ *   Verifies active administrator in MongoDB and returns profile.
+ * - POST /api/admin/auth/logout
+ *   Stateless logout endpoint.
+ */
 export const authService = {
   /**
-   * Performs Google sign-in popup via Firebase client SDK,
-   * exchanges token with Sinka backend, and verifies administrator role.
+   * Authenticates an administrator with email and password credentials.
    *
-   * @returns {Promise<object>} Authenticated admin profile { id, email, displayName, role }
+   * @param {object} credentials
+   * @param {string} credentials.email - Administrator email
+   * @param {string} credentials.password - Administrator password
+   * @returns {Promise<object>} Authenticated administrator profile
    */
-  async loginWithGoogle() {
+  async login({ email, password }) {
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      throw new Error('Please enter your administrator email address.');
+    }
+
+    if (!password || typeof password !== 'string') {
+      throw new Error('Please enter your administrator password.');
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
     try {
-      // 1. Open Firebase Google sign-in popup
-      const userCredential = await signInWithPopup(auth, googleProvider);
+      const response = await apiClient.post('/admin/auth/login', {
+        email: normalizedEmail,
+        password,
+      });
 
-      // 2. Retrieve Firebase ID token
-      const idToken = await userCredential.user.getIdToken();
+      if (!response.data?.success) {
+        throw new Error(response.data?.error?.message || 'Authentication failed.');
+      }
 
-      // 3. Exchange token with Sinka backend verification endpoint
-      const user = await this.loginWithFirebaseToken(idToken);
+      const token = response.data?.data?.token || response.data?.token;
+      const user = response.data?.data?.user || response.data?.user;
+
+      if (!token || typeof token !== 'string') {
+        throw new Error('Backend response did not include a valid administrative session token.');
+      }
+
+      if (!user) {
+        throw new Error('Backend response did not include administrator profile data.');
+      }
+
+      // Defense-in-depth: Ensure role is strictly 'admin'
+      if (user.role !== 'admin') {
+        clearAuthToken();
+        throw new Error(
+          'Access denied: Your account does not possess administrator privileges for this workspace.'
+        );
+      }
+
+      // Safely persist the 24-hour JWT in memory and browser storage
+      setAuthToken(token);
 
       return user;
-    } catch (error) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        throw new Error('Authentication cancelled. Google popup was closed before completion.');
-      }
-      if (error.code === 'auth/popup-blocked') {
-        throw new Error('Sign-in popup was blocked by browser. Please allow popups for this domain.');
-      }
-      throw error;
+    } catch (err) {
+      clearAuthToken();
+      throw err;
     }
   },
 
   /**
-   * Exchanges an ID token directly with the Sinka backend verification endpoint.
-   * Enforces that the authenticated user strictly possesses the 'admin' role.
+   * Retrieves the current administrator profile from GET /api/admin/auth/me.
    *
-   * @param {string} idToken - Cryptographically valid Firebase ID token.
+   * @param {string} [token] - Optional explicit Bearer token override
    * @returns {Promise<object>} Authenticated administrator profile
    */
-  async loginWithFirebaseToken(idToken) {
-    if (!idToken || typeof idToken !== 'string' || !idToken.trim()) {
-      throw new Error('A valid Firebase ID token is required.');
+  async getCurrentUser(token) {
+    const activeToken = token || getAuthToken();
+    if (!activeToken) {
+      throw new Error('No active session token available.');
     }
 
-    const trimmedToken = idToken.trim();
+    // Advisory check: if the token is already expired according to its exp claim, purge immediately
+    if (isTokenExpired(activeToken)) {
+      clearAuthToken();
+      throw new Error('Administrator session has expired. Please sign in again.');
+    }
 
-    // Exchange token with backend synchronization endpoint
-    const response = await apiClient.post('/auth/firebase-login', { idToken: trimmedToken });
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
+    const response = await apiClient.get('/admin/auth/me', config);
 
     if (!response.data?.success) {
-      throw new Error(response.data?.error?.message || 'Authentication failed on backend.');
+      throw new Error(response.data?.error?.message || 'Failed to retrieve administrator profile.');
     }
 
     const user = response.data?.data?.user;
-
-    if (!user) {
-      throw new Error('Backend response did not contain user profile data.');
+    if (!user || user.role !== 'admin') {
+      clearAuthToken();
+      throw new Error('Access denied: Administrator permissions required.');
     }
-
-    // Strict Role Validation: Customer accounts are rejected from admin panel
-    if (user.role !== 'admin') {
-      // Sign out from Firebase immediately so unauthorized session does not linger
-      try {
-        await signOut(auth);
-      } catch {
-        // Ignore sign-out cleanup errors
-      }
-      setAuthToken(null);
-      throw new Error(
-        `Access denied. Your account (${user.email || 'signed in'}) does not have administrator privileges (role: '${user.role}'). Access to the Sinka Admin workspace requires role 'admin' in MongoDB.`
-      );
-    }
-
-    // Attach verified token to API client
-    setAuthToken(trimmedToken);
 
     return user;
   },
 
   /**
-   * Retrieves the current user profile from GET /api/auth/me.
-   *
-   * @param {string} [token] - Optional explicit Bearer token override
-   * @returns {Promise<object>} Authenticated user profile
+   * Terminates the administrator session:
+   * 1. Calls POST /api/admin/auth/logout on the backend (non-blocking).
+   * 2. Purges the JWT from in-memory cache and browser storage.
    */
-  async getCurrentUser(token) {
-    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
-    const response = await apiClient.get('/auth/me', config);
-
-    if (!response.data?.success) {
-      throw new Error(response.data?.error?.message || 'Failed to retrieve profile.');
+  async logout() {
+    try {
+      await apiClient.post('/admin/auth/logout');
+    } catch {
+      // Stateless token logout: failure to reach backend does not block local session clearance
+    } finally {
+      clearAuthToken();
     }
-
-    return response.data?.data?.user || null;
   },
 
   /**
-   * Signs out of Firebase and clears in-memory tokens.
+   * Checks if an active token currently exists in storage or memory.
+   *
+   * @returns {boolean}
    */
-  async logout() {
-    setAuthToken(null);
-    try {
-      await signOut(auth);
-    } catch {
-      // Ignore cleanup error
+  hasStoredSession() {
+    const token = getAuthToken();
+    if (!token) return false;
+    if (isTokenExpired(token)) {
+      clearAuthToken();
+      return false;
     }
+    return true;
   },
+
+  isTokenExpired,
+  decodeJwtPayload,
 };
 
 export default authService;

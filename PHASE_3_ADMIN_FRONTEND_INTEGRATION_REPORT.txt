@@ -1,0 +1,326 @@
+================================================================================
+SINKA PROJECT — PHASE 3: ADMIN FRONTEND INTEGRATION REPORT
+================================================================================
+Date: 2026-10-27
+Repository: sinka-admin (/Users/alenroy/Documents/Alen/sinka-admin)
+Integration Targets:
+  - Backend: /Users/alenroy/Documents/Alen/Sinka-backend
+  - Storefront (Untouched): /Users/alenroy/Documents/Alen/sinka-frontend
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Phase 3 establishes clean, resilient connectivity between the sinka-admin React/Vite
+frontend and the dedicated administrative backend APIs implemented in Sinka-backend.
+
+Key achievements:
+  1. Connected administrative authentication to POST /api/admin/auth/login and
+     GET /api/admin/auth/me using Firebase Client SDK token exchange and Bearer auth.
+  2. Integrated all 8 dedicated administrative promotional offer endpoints under
+     /api/admin/offers/* with full CRUD, status toggle, pagination, and live
+     storefront active offer preview.
+  3. Enforced strict RBAC verification where successful Google sign-in alone is
+     never treated as proof of admin privilege; backend MongoDB role verification
+     is strictly authoritative.
+  4. Preserved all project boundaries: customer storefront (sinka-frontend) was
+     completely untouched; backend (Sinka-backend) remained structurally unchanged
+     with all 81 unit/integration tests passing.
+  5. Validated frontend production build and zero ESLint errors/warnings.
+
+
+2. FILES INSPECTED AND CHANGED
+--------------------------------------------------------------------------------
+A. Inspected in Sinka-backend (Authority):
+  - routes/admin/index.routes.js: Dedicated admin router mounted at /api/admin
+  - routes/admin/auth.routes.js & controller/admin/auth.controller.js:
+      POST /api/admin/auth/login & GET /api/admin/auth/me
+  - routes/admin/offer.routes.js & controller/admin/offer.controller.js:
+      Full CRUD, status toggle, and active offer preview
+  - config/env.js & .env: Backend port (5001) and CORS configuration
+  - tests/admin.test.js: Test assertions for admin auth and offer contracts
+
+B. Inspected in sinka-admin:
+  - src/services/auth.service.js
+  - src/lib/api.js
+  - src/config/firebase.js
+  - src/context/AuthProvider.jsx & src/context/authContext.js
+  - src/components/layout/ProtectedRoute.jsx
+  - src/components/layout/Sidebar.jsx
+  - src/components/layout/Header.jsx
+  - src/app/router.jsx
+  - src/pages/auth/LoginPage.jsx
+  - src/pages/dashboard/DashboardPage.jsx
+  - src/constants.js
+  - .env.example
+
+C. Modified in sinka-admin:
+  - src/services/auth.service.js:
+      Updated login() to POST /admin/auth/login with { idToken }.
+      Updated getCurrentUser() to GET /admin/auth/me with Bearer token.
+      Enforced strict check: throws 403 if response role !== 'admin'.
+  - src/context/AuthProvider.jsx:
+      Restores session on reload via GET /admin/auth/me.
+      Purges token and signs out of Firebase on 401/403 errors.
+  - src/pages/auth/LoginPage.jsx:
+      Aligned developer UI, token paste mode, and documentation notes with
+      POST /api/admin/auth/login.
+  - src/components/layout/Sidebar.jsx:
+      Added "Promotional Offers" navigation link with Tag icon.
+  - src/components/layout/Header.jsx:
+      Updated breadcrumb title resolver for /offers, /offers/new, and edit routes.
+  - src/app/router.jsx:
+      Mounted protected admin routes (/dashboard, /offers, /offers/new,
+      /offers/:id/edit) under pathless ProtectedRoute + AdminLayout shell.
+  - src/constants.js:
+      Added ROUTES.OFFERS, ROUTES.OFFERS_NEW, ROUTES.OFFERS_EDIT.
+  - src/pages/dashboard/DashboardPage.jsx:
+      Added Promotional Offers management overview card, quick action buttons,
+      and updated active endpoint list to /api/admin/auth/* and /api/admin/offers/*.
+
+D. Created in sinka-admin:
+  - src/services/offer.service.js:
+      Dedicated API service handling all 8 admin offer endpoints.
+  - src/pages/offers/OffersListPage.jsx:
+      Full offer management page with status tabs (All, Active, Inactive),
+      table listing, inline active toggle, delete confirmation modal, pagination,
+      and storefront active offer preview modal.
+  - src/pages/offers/OfferFormPage.jsx:
+      Unified Create & Edit form with client-side Zod-aligned validation,
+      date/time scheduling, priority controls, and real-time live storefront banner
+      preview card.
+
+
+3. AUTHENTICATION FLOW: BEFORE AND AFTER
+--------------------------------------------------------------------------------
+Before:
+  - Frontend called customer endpoints: POST /api/auth/firebase-login and
+    GET /api/auth/me.
+  - No clear differentiation between customer and administrator authentication
+    routes.
+  - Potential risk of customer accounts obtaining sessions without admin-specific
+    backend verification.
+
+After:
+  - Login Flow:
+      1. Administrator clicks "Sign In with Google (Administrator)".
+      2. Firebase Client SDK prompts user and returns Google credential.
+      3. Frontend extracts Firebase ID Token (user.getIdToken()).
+      4. Frontend sends POST /api/admin/auth/login with { idToken: "<FIREBASE_ID_TOKEN>" }.
+      5. Backend verifies token with Firebase Admin SDK, looks up user in MongoDB.
+      6. If user.role !== 'admin', backend immediately responds with 403 FORBIDDEN.
+      7. Frontend only marks user authenticated when backend responds 200 OK with
+         role: 'admin'.
+      8. Session token is stored in memory and localStorage for API client interceptor.
+  - Session Restoration:
+      1. On page refresh, AuthProvider detects stored Firebase token / Firebase session.
+      2. Calls GET /api/admin/auth/me with Authorization: Bearer <token>.
+      3. If valid and admin, profile is restored.
+      4. If 401 or 403, session is destroyed and user is redirected to /login.
+  - Logout Flow:
+      1. Calls authService.logout().
+      2. Clears localStorage token, signs out of Firebase Client SDK.
+      3. State resets to unauthenticated; ProtectedRoute bounces to /login.
+
+
+4. API ENDPOINTS INTEGRATED
+--------------------------------------------------------------------------------
+All endpoints are prefixed with the baseURL (e.g. http://localhost:5001/api).
+
+A. Authentication Endpoints:
+  1. POST /api/admin/auth/login
+     - Request Header: Content-Type: application/json
+     - Request Body: { "idToken": "<Firebase ID Token>" }
+     - Response (200):
+       {
+         "success": true,
+         "data": {
+           "user": {
+             "id": "...",
+             "email": "...",
+             "role": "admin",
+             "displayName": "..."
+           },
+           "token": "<Firebase ID Token>"
+         }
+       }
+     - Failure (401/403):
+       { "success": false, "error": { "code": "FORBIDDEN", "message": "Access denied. Administrator privileges required." } }
+
+  2. GET /api/admin/auth/me
+     - Request Header: Authorization: Bearer <Firebase ID Token>
+     - Response (200):
+       {
+         "success": true,
+         "data": {
+           "user": { "id": "...", "email": "...", "role": "admin", "displayName": "..." }
+         }
+       }
+
+B. Promotional Offer Endpoints:
+  All offer endpoints require: Authorization: Bearer <Firebase ID Token>
+
+  1. GET /api/admin/offers
+     - Query Parameters: ?page=1&limit=20&status=all (or 'active', 'inactive')
+     - Response (200):
+       {
+         "success": true,
+         "data": { "offers": [...] },
+         "meta": { "total": 1, "page": 1, "limit": 20, "totalPages": 1 }
+       }
+
+  2. GET /api/admin/offers/:id
+     - Param: 24-char hex ObjectId
+     - Response (200):
+       { "success": true, "data": { "offer": { ... } } }
+
+  3. POST /api/admin/offers
+     - Request Body:
+       {
+         "title": "Spring Living Room Sale",
+         "description": "Up to 40% off handcrafted sofas and teak tables.",
+         "imageUrl": "https://images.unsplash.com/photo-...",
+         "ctaLabel": "Shop Now",
+         "ctaUrl": "/products?category=living",
+         "offerDetails": "Valid through May 15.",
+         "priority": 10,
+         "startDate": "2026-05-01T00:00:00.000Z",
+         "endDate": "2026-05-31T23:59:59.000Z",
+         "isActive": true
+       }
+     - Response (201):
+       { "success": true, "data": { "offer": { ... } } }
+
+  4. PUT /api/admin/offers/:id
+     - Request Body: Full replacement fields matching create schema
+     - Response (200):
+       { "success": true, "data": { "offer": { ... } } }
+
+  5. PATCH /api/admin/offers/:id
+     - Request Body: Partial fields to update
+     - Response (200):
+       { "success": true, "data": { "offer": { ... } } }
+
+  6. PATCH /api/admin/offers/:id/status
+     - Request Body: { "isActive": true | false }
+     - Response (200):
+       { "success": true, "data": { "offer": { ... } } }
+
+  7. DELETE /api/admin/offers/:id
+     - Response (200):
+       { "success": true, "data": { "id": "...", "deleted": true } }
+
+  8. GET /api/admin/offers/active
+     - Response (200):
+       { "success": true, "data": { ... winning offer or null ... } }
+
+
+5. ENVIRONMENT VARIABLES REQUIRED
+--------------------------------------------------------------------------------
+The admin frontend requires the following environment variables (stored in .env
+or configured via deployment provider). No secret keys or private service accounts
+are placed in client code:
+
+  Variable Name                      Purpose / Description
+  ---------------------------------  -------------------------------------------
+  VITE_API_BASE_URL                  Base URL for backend REST API
+                                     (e.g., http://localhost:5001/api)
+  VITE_FIREBASE_API_KEY              Firebase Web Client public API key
+  VITE_FIREBASE_AUTH_DOMAIN          Firebase project auth domain
+  VITE_FIREBASE_PROJECT_ID           Firebase project ID
+  VITE_FIREBASE_STORAGE_BUCKET       Firebase storage bucket
+  VITE_FIREBASE_MESSAGING_SENDER_ID  Firebase Cloud Messaging sender ID
+  VITE_FIREBASE_APP_ID               Firebase Web App client ID
+
+Note: Firebase Admin SDK service account credentials (private keys) remain strictly
+on the backend and are NEVER exposed to the frontend browser application.
+
+
+6. CORS FINDINGS & RECOMMENDATION
+--------------------------------------------------------------------------------
+- Inspection of Sinka-backend/config/env.js and Sinka-backend/.env revealed:
+    CORS_ORIGIN=http://localhost:5173
+- The customer storefront runs on port 5173 (http://localhost:5173).
+- The admin panel runs on port 5174 (http://localhost:5174).
+- Impact: When the admin frontend in a live browser sends cross-origin fetch/axios
+  requests to http://localhost:5001/api, the backend CORS middleware will reject
+  requests originating from http://localhost:5174 because 5174 is not currently
+  in CORS_ORIGIN.
+- Scope Rule Adherence: Per Phase 3 rules ("Do not modify backend CORS settings
+  unless a real integration issue requires it. If a backend change is necessary,
+  document it separately and request approval before expanding the scope"),
+  Sinka-backend was NOT modified.
+- Recommendation for User Approval:
+  Update Sinka-backend/.env:
+    CORS_ORIGIN=http://localhost:5173,http://localhost:5174
+  (Or alternatively configure a dev proxy in sinka-admin/vite.config.js).
+
+
+7. ROUTE-GUARD BEHAVIOR
+--------------------------------------------------------------------------------
+- ProtectedRoute Component:
+  - Displays a clean loading spinner while Firebase and backend session verification
+    is in progress.
+  - If user is not authenticated, redirects directly to ROUTES.LOGIN (/login)
+    with replace=true.
+  - If user is authenticated but user.role !== 'admin', triggers authService.logout()
+    and redirects to /login with an unauthorized access warning.
+  - Verified via browser test: Attempting to directly load /offers or /dashboard
+    without authentication immediately bounces to /login.
+
+
+8. BUILD, LINT, AND TEST RESULTS
+--------------------------------------------------------------------------------
+A. Frontend Lint:
+  Command: export PATH="/Users/alenroy/.nvm/versions/node/v24.15.0/bin:$PATH" && npm run lint
+  Result: 0 errors, 0 warnings (Exit code 0).
+
+B. Frontend Production Build:
+  Command: export PATH="/Users/alenroy/.nvm/versions/node/v24.15.0/bin:$PATH" && npm run build
+  Result: Built in 792ms (Exit code 0).
+  Artifacts generated:
+    dist/index.html                     1.17 kB │ gzip:  0.58 kB
+    dist/assets/index-4u9omJrU.css     37.37 kB │ gzip:  7.24 kB
+    dist/assets/index-DXBWUCl5.js     133.66 kB │ gzip: 39.02 kB
+    dist/assets/firebase-Pua9GJBT.js  155.49 kB │ gzip: 31.93 kB
+    dist/assets/vendor-hi3z1QbV.js    236.12 kB │ gzip: 77.32 kB
+
+C. Backend Test Suite (Safety Check):
+  Command: export PATH="/Users/alenroy/.nvm/versions/node/v24.15.0/bin:$PATH" && npm test --prefix /Users/alenroy/Documents/Alen/Sinka-backend
+  Result:
+    15 suites passed
+    81 tests passed, 0 failures, 0 skipped
+    All admin auth and offer API integration tests succeeded.
+
+
+9. MANUAL TESTING PERFORMED & UNVERIFIED SCOPE
+--------------------------------------------------------------------------------
+Performed:
+  1. Automated browser subagent test navigating to http://localhost:5174/login:
+     - Confirmed visual rendering of Sinka Admin Portal.
+     - Confirmed presence of dedicated administrative auth notice.
+     - Confirmed developer token input tool.
+  2. Automated browser subagent test navigating to http://localhost:5174/offers:
+     - Confirmed route guard interception and redirection back to /login.
+  3. Form validation verification:
+     - Title length, description length, URL format validation, and date ordering
+       (endDate >= startDate) implemented and verified.
+  4. Backend route alias verification:
+     - Verified that backend tests pass for both /api/admin/offers and /api/offers
+       aliases.
+
+Unverified (Requires live environment credentials):
+  - Interactive popup Google authentication against a live Firebase console project
+    and MongoDB cluster with an active administrator account.
+  - Live cross-origin requests from port 5174 against a running backend until
+    the backend CORS_ORIGIN setting is updated.
+
+
+10. BLOCKERS & BACKEND CHANGES REQUIRING APPROVAL
+--------------------------------------------------------------------------------
+1. Backend CORS Origin:
+   - Requested change: In Sinka-backend/.env, append http://localhost:5174 to CORS_ORIGIN:
+       CORS_ORIGIN=http://localhost:5173,http://localhost:5174
+   - Rationale: Required for live browser fetch requests from sinka-admin dev server.
+
+No other blockers exist. Phase 3 is complete.
+================================================================================

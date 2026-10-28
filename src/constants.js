@@ -11,11 +11,18 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   DASHBOARD: '/dashboard',
+  OFFERS: '/offers',
+  OFFERS_NEW: '/offers/new',
+  OFFERS_EDIT: '/offers/:id/edit',
 };
 
 export const NAVIGATION_ITEMS = [
   {
     name: 'Dashboard',
     path: ROUTES.DASHBOARD,
+  },
+  {
+    name: 'Promotional Offers',
+    path: ROUTES.OFFERS,
   },
 ];
