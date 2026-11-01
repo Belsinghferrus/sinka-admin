@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ShieldCheck, Layers, Database, Tag, Plus, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Layers, Database, Tag, Package, Plus, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { ROUTES } from '../../constants.js';
 
@@ -19,20 +19,27 @@ export function DashboardPage() {
             Centralized administrative management workspace for Sinka Home &amp; Living back-office operations.
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
-            to={ROUTES.OFFERS_NEW}
+            to={ROUTES.PRODUCTS_NEW}
             className="inline-flex items-center space-x-1.5 px-3 py-2 bg-brand-primary text-white text-xs font-semibold rounded-md shadow-xs hover:bg-brand-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>New Offer</span>
+            <span>Add Product</span>
+          </Link>
+          <Link
+            to={ROUTES.PRODUCTS}
+            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-stone-100 text-stone-700 text-xs font-semibold rounded-md hover:bg-stone-200/80 transition-colors"
+          >
+            <Package className="w-4 h-4" />
+            <span>Products</span>
           </Link>
           <Link
             to={ROUTES.OFFERS}
             className="inline-flex items-center space-x-1.5 px-3 py-2 bg-stone-100 text-stone-700 text-xs font-semibold rounded-md hover:bg-stone-200/80 transition-colors"
           >
             <Tag className="w-4 h-4" />
-            <span>Manage Offers</span>
+            <span>Offers</span>
           </Link>
         </div>
       </div>
@@ -95,9 +102,95 @@ export function DashboardPage() {
             </li>
             <li className="flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Product Catalogue &amp; Cloudflare R2 (<code className="font-mono">/api/admin/products/*</code>, <code className="font-mono">/api/admin/upload/*</code>)</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>Promotional Offers CRUD (<code className="font-mono">/api/admin/offers/*</code>)</span>
             </li>
           </ul>
+        </div>
+      </div>
+
+      {/* Product Management Quick Panel */}
+      <div className="bg-white rounded-lg border border-stone-200 p-5 shadow-xs">
+        <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-md bg-stone-100 text-stone-800">
+              <Package className="w-5 h-5 text-brand-primary" />
+            </div>
+            <div>
+              <h3 className="text-base font-heading font-semibold text-stone-900">
+                Product Catalogue Management
+              </h3>
+              <p className="text-xs text-stone-500">
+                Manage handcrafted furniture products, pricing, inventory, and Cloudflare R2 media galleries
+              </p>
+            </div>
+          </div>
+          <Link
+            to={ROUTES.PRODUCTS}
+            className="text-xs font-semibold text-brand-primary hover:text-brand-primary-hover flex items-center space-x-1"
+          >
+            <span>View Catalogue</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
+            <div>
+              <p className="font-semibold text-stone-900">Furniture Catalogue</p>
+              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
+                Add and edit furniture across 10 canonical categories with comprehensive specs, pricing, and MRP discount displays.
+              </p>
+            </div>
+            <div className="mt-3">
+              <Link
+                to={ROUTES.PRODUCTS_NEW}
+                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
+              >
+                <span>Add new product</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
+            <div>
+              <p className="font-semibold text-stone-900">Cloudflare R2 Storage</p>
+              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
+                High-performance object storage integration. Multi-image uploads (JPEG, PNG, WebP, AVIF up to 8 MB) with drag-and-drop.
+              </p>
+            </div>
+            <div className="mt-3">
+              <Link
+                to={ROUTES.PRODUCTS}
+                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
+              >
+                <span>Manage media galleries</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
+            <div>
+              <p className="font-semibold text-stone-900">Inventory &amp; Stock Tracking</p>
+              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
+                Monitor stock levels, SKUs, and active storefront visibility. Automated low-stock and out-of-stock badges.
+              </p>
+            </div>
+            <div className="mt-3">
+              <Link
+                to={ROUTES.PRODUCTS}
+                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
+              >
+                <span>Inspect inventory</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 

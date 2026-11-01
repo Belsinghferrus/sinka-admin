@@ -15,6 +15,7 @@ import {
 import offerService from '../../services/offer.service.js';
 import Button from '../../components/ui/Button.jsx';
 import LoadingIndicator from '../../components/ui/LoadingIndicator.jsx';
+import OfferImageUploader from '../../components/offers/OfferImageUploader.jsx';
 import { ROUTES } from '../../constants.js';
 
 /**
@@ -43,6 +44,7 @@ export function OfferFormPage() {
     title: '',
     description: '',
     imageUrl: '',
+    imageKey: null,
     ctaLabel: 'Shop Now',
     ctaUrl: '/products',
     offerDetails: '',
@@ -56,6 +58,7 @@ export function OfferFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [imgPreviewError, setImgPreviewError] = useState(false);
 
   // Fetch offer when editing
   useEffect(() => {
@@ -75,6 +78,7 @@ export function OfferFormPage() {
             title: offer.title || '',
             description: offer.description || '',
             imageUrl: offer.imageUrl || '',
+            imageKey: offer.imageKey || null,
             ctaLabel: offer.ctaLabel || 'Shop Now',
             ctaUrl: offer.ctaUrl || '/products',
             offerDetails: offer.offerDetails || '',
@@ -83,6 +87,7 @@ export function OfferFormPage() {
             endDate: toDatetimeLocalValue(offer.endDate),
             isActive: Boolean(offer.isActive),
           });
+          setImgPreviewError(false);
         }
       } catch (err) {
         if (isMounted) {
@@ -133,10 +138,10 @@ export function OfferFormPage() {
       errors.description = 'Description cannot exceed 500 characters.';
     }
 
-    if (!formData.imageUrl.trim()) {
-      errors.imageUrl = 'Image URL is required.';
+    if (!formData.imageUrl || !formData.imageUrl.trim()) {
+      errors.imageUrl = 'A promotional banner image is required. Please upload an image.';
     } else if (!/^https?:\/\/.+/i.test(formData.imageUrl.trim())) {
-      errors.imageUrl = 'Image URL must be a valid HTTP or HTTPS web address.';
+      errors.imageUrl = 'Banner image must be a valid HTTP or HTTPS web address.';
     }
 
     if (!formData.ctaLabel.trim()) {
@@ -189,6 +194,7 @@ export function OfferFormPage() {
       title: formData.title.trim(),
       description: formData.description.trim(),
       imageUrl: formData.imageUrl.trim(),
+      imageKey: formData.imageKey || null,
       ctaLabel: formData.ctaLabel.trim(),
       ctaUrl: formData.ctaUrl.trim(),
       offerDetails: formData.offerDetails.trim() || null,
@@ -368,30 +374,32 @@ export function OfferFormPage() {
                 <span>Media &amp; Call to Action</span>
               </h3>
 
-              {/* Image URL */}
+              {/* Promotional Banner Image Upload */}
               <div>
-                <label htmlFor="imageUrl" className="block text-xs font-semibold text-stone-700 mb-1">
-                  Banner Image URL <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                  Promotional Banner Image <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <input
-                    type="url"
-                    id="imageUrl"
-                    name="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={handleChange}
-                    placeholder="https://images.unsplash.com/photo-..."
-                    className={`w-full pl-9 pr-3 py-2 text-sm border rounded-md shadow-xs focus:outline-none focus:ring-2 transition-colors ${
-                      fieldErrors.imageUrl
-                        ? 'border-red-300 focus:ring-red-200 focus:border-red-500'
-                        : 'border-stone-300 focus:ring-brand-primary/20 focus:border-brand-primary'
-                    }`}
-                  />
-                  <ImageIcon className="w-4 h-4 text-stone-400 absolute left-3 top-2.5 pointer-events-none" />
-                </div>
-                {fieldErrors.imageUrl && (
-                  <p className="mt-1 text-[11px] text-red-600 font-medium">{fieldErrors.imageUrl}</p>
-                )}
+                <OfferImageUploader
+                  value={formData.imageUrl}
+                  imageKey={formData.imageKey}
+                  onChange={({ url, key }) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      imageUrl: url,
+                      imageKey: key,
+                    }));
+                    setImgPreviewError(false);
+                    if (fieldErrors.imageUrl) {
+                      setFieldErrors((prev) => {
+                        const updated = { ...prev };
+                        delete updated.imageUrl;
+                        return updated;
+                      });
+                    }
+                  }}
+                  disabled={isSubmitting}
+                  error={fieldErrors.imageUrl}
+                />
               </div>
 
               {/* Call to Action Row */}
@@ -564,16 +572,14 @@ export function OfferFormPage() {
                 >
                   {isEditing ? 'Save Offer Changes' : 'Publish Offer'}
                 </Button>
-                <Link to={ROUTES.OFFERS} className="block">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    fullWidth
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                </Link>
+                <Button
+                  to={ROUTES.OFFERS}
+                  variant="outline"
+                  fullWidth
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
               </div>
             </div>
 
@@ -591,23 +597,25 @@ export function OfferFormPage() {
 
               {/* Mock Banner */}
               <div className="rounded-lg border border-stone-200 overflow-hidden bg-stone-900 text-white relative shadow-sm">
-                <div className="h-32 sm:h-36 bg-stone-800 relative overflow-hidden">
-                  {formData.imageUrl ? (
+                <div className="aspect-16/9 sm:aspect-21/9 bg-stone-800 relative overflow-hidden">
+                  {formData.imageUrl && !imgPreviewError ? (
                     <img
                       src={formData.imageUrl}
-                      alt="Banner Preview"
-                      className="w-full h-full object-cover opacity-75"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
+                      alt="Storefront Banner Preview"
+                      className="w-full h-full object-cover object-center opacity-85 transition-opacity duration-200"
+                      onError={() => setImgPreviewError(true)}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-stone-500 text-xs">
-                      No image URL specified
+                    <div className="w-full h-full flex flex-col items-center justify-center text-stone-400 p-4 text-center bg-stone-900">
+                      <ImageIcon className="w-6 h-6 mb-1.5 text-stone-600" />
+                      <span className="text-xs text-stone-400 font-medium">No banner image uploaded</span>
+                      <span className="text-[10px] text-stone-500 mt-0.5 max-w-xs">
+                        Upload an image to preview how it will appear on the customer storefront
+                      </span>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-linear-to-t from-stone-950/90 via-stone-950/40 to-transparent" />
-                  <div className="absolute top-2 left-2 flex items-center space-x-1 bg-amber-500/90 text-stone-900 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                  <div className="absolute inset-0 bg-linear-to-t from-stone-950/90 via-stone-950/30 to-transparent pointer-events-none" />
+                  <div className="absolute top-2 left-2 flex items-center space-x-1 bg-amber-500/90 text-stone-900 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shadow-xs">
                     <Sparkles className="w-2.5 h-2.5" />
                     <span>Special Offer</span>
                   </div>

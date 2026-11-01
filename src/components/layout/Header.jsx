@@ -10,6 +10,9 @@ export function Header({ onOpenSidebar }) {
   const getPageTitle = (pathname) => {
     if (pathname === ROUTES.DASHBOARD) return 'Dashboard';
     if (pathname === ROUTES.LOGIN) return 'Authentication';
+    if (pathname === ROUTES.PRODUCTS) return 'Product Catalogue';
+    if (pathname === ROUTES.PRODUCTS_NEW) return 'Add New Product';
+    if (pathname.startsWith('/products/') && pathname.endsWith('/edit')) return 'Edit Product';
     if (pathname === ROUTES.OFFERS) return 'Promotional Offers';
     if (pathname === ROUTES.OFFERS_NEW) return 'Create Promotional Offer';
     if (pathname.startsWith('/offers/') && pathname.endsWith('/edit')) return 'Edit Promotional Offer';

@@ -112,6 +112,49 @@ export const offerService = {
     const response = await apiClient.get('/admin/offers/active');
     return response.data?.data || null;
   },
+
+  /**
+   * Upload a single promotional offer banner image to Cloudflare R2 via backend endpoint.
+   * Sends multipart/form-data with field name 'image'.
+   * Never sets multipart Content-Type header manually to allow browser to generate boundary.
+   *
+   * @param {File} file - File object (max 5 MB, JPG/PNG/WebP)
+   * @param {Function} [onProgress] - Optional upload progress callback (percentage: number) => void
+   * @returns {Promise<{ key: string, url: string, contentType: string, size: number, originalName: string }>}
+   */
+  async uploadOfferImage(file, onProgress) {
+    if (!file) {
+      throw new Error('A banner image file is required for upload.');
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await apiClient.post('/admin/upload/offers', formData, {
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percent);
+        }
+      },
+    });
+
+    return response.data?.data;
+  },
+
+  /**
+   * Safely delete an uncommitted/cancelled banner image from Cloudflare R2 storage by its key.
+   *
+   * @param {string} key - R2 object key under offers/
+   * @returns {Promise<object>}
+   */
+  async deleteUploadedImage(key) {
+    if (!key) throw new Error('Image key is required for deletion.');
+    const response = await apiClient.delete('/admin/upload/offers', {
+      data: { key },
+    });
+    return response.data?.data;
+  },
 };
 
 export default offerService;

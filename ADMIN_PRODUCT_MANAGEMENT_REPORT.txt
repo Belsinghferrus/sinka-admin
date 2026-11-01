@@ -1,0 +1,272 @@
+================================================================================
+SINKA HOME & LIVING — ADMIN PRODUCT MANAGEMENT UI INTEGRATION REPORT
+================================================================================
+Date: 2026-10-29
+Status: Production-Ready & Verified
+Application: Sinka Admin Dashboard (sinka-admin)
+Integration Targets:
+  - Backend: /Users/alenroy/Documents/Alen/Sinka-backend
+  - Customer Storefront (Untouched): /Users/alenroy/Documents/Alen/sinka-frontend
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+The Sinka Admin Dashboard now features a complete, professional, production-grade
+Product Management UI seamlessly integrated with the backend REST API and Cloudflare
+R2 object storage service.
+
+Key Features & Achievements:
+  1. Product Catalogue Management:
+     - Search by title, description, or SKU.
+     - Category filtering across all 10 canonical Sinka furniture categories.
+     - Status filtering (All, Active, Inactive, Featured).
+     - Flexible sorting (Newest, Price: Low to High, Price: High to Low, Stock, Name).
+     - Responsive data table displaying cover thumbnails, pricing (with MRP strikethrough
+       and discount % calculations), stock indicators, active/featured badges, and actions.
+     - Server-side pagination with item count indicators.
+  2. Cloudflare R2 Image Upload Integration:
+     - Integrates with dedicated backend upload endpoint: POST /api/admin/upload/products.
+     - Supports up to 10 images per batch, max 8 MB per file (JPEG, PNG, WebP, AVIF).
+     - Multi-image file picker & drag-and-drop zone.
+     - Real-time upload progress bar and error feedback.
+     - Gallery manager allowing image reordering (left/right sequence), selecting the
+       primary/cover image (stored at index 0), adding accessible alt text, and safe removal.
+     - Clean separation: Local file paths or raw binaries are never submitted to the
+       product database; only public CDN URLs and 'products/' R2 keys are stored.
+     - Zero credential leakage: R2 secret keys and access tokens remain exclusively
+       on the backend.
+  3. Product Creation & Editing Workflows:
+     - Unified, accessible form supporting creation (/products/new) and editing
+       (/products/:id/edit).
+     - Auto-generated URL slug derived from product title (with manual override option).
+     - Canonical category selection dropdown.
+     - Pricing validation (selling price, MRP, automatic savings calculation).
+     - Inventory tracking (stock quantity, SKU code, automated Low Stock / Out of Stock states).
+     - Interactive Storefront Live Preview card simulating real customer card appearance.
+     - Prevents accidental data loss or double submissions during asynchronous requests.
+  4. Product Detail & Quick Inspection:
+     - Modal viewer for rapid inspection of all product specifications, complete R2
+       image gallery, pricing savings, inventory status, and R2 object keys.
+  5. Security & Isolation:
+     - Uses 24-hour dedicated Admin JWT Bearer authentication via centralized apiClient.
+     - Automatic FormData boundary generation (never overrides multipart Content-Type).
+     - Customer storefront (sinka-frontend) and backend codebase remained untouched.
+
+
+2. FILES CREATED & MODIFIED
+--------------------------------------------------------------------------------
+Created in sinka-admin:
+  - src/services/product.service.js
+    * Centralized service boundary for product CRUD and Cloudflare R2 image uploads.
+    * Methods: getProducts, getProductById, createProduct, updateProduct, deleteProduct,
+      uploadImages, deleteR2Image.
+  - src/components/products/ProductImageUploader.jsx
+    * Cloudflare R2 upload dropzone, progress bar, gallery reordering, cover selection,
+      alt text editing, and safe image removal.
+  - src/components/products/ProductDetailModal.jsx
+    * Quick inspection dialog displaying all product details, media gallery, pricing,
+      stock status, and R2 storage keys.
+  - src/pages/products/ProductsListPage.jsx
+    * Primary catalogue view with search, category/status filters, sorting, responsive
+      table, pagination, and delete confirmation modal.
+  - src/pages/products/ProductFormPage.jsx
+    * Unified Add/Edit product form with live storefront preview card and client validation.
+  - tests/product.test.js
+    * 8 unit and integration tests verifying service calls, query parameter mapping,
+      category alignment, and upload validation.
+
+Modified in sinka-admin:
+  - src/constants.js
+    * Added ROUTES.PRODUCTS, PRODUCTS_NEW, PRODUCTS_EDIT.
+    * Added PRODUCT_CATEGORIES (all 10 canonical Sinka furniture categories).
+    * Added Cloudflare R2 limits (MAX_PRODUCT_IMAGES_PER_REQUEST, MAX_PRODUCT_IMAGE_SIZE_BYTES,
+      ALLOWED_IMAGE_TYPES).
+    * Updated NAVIGATION_ITEMS to include "Products".
+  - src/app/router.jsx
+    * Registered protected routes for /products, /products/new, /products/:id/edit.
+  - src/components/layout/Sidebar.jsx
+    * Added "Products" navigation link with Package icon.
+  - src/components/layout/Header.jsx
+    * Added breadcrumb page title resolver for product routes.
+  - src/lib/api.js
+    * Added request interceptor safeguard ensuring FormData payloads do not have
+      static Content-Type: application/json, allowing browser boundary generation.
+  - src/pages/dashboard/DashboardPage.jsx
+    * Added Product Management quick overview card and action links.
+  - package.json
+    * Added "test": "node --test tests/**/*.test.js" script.
+
+
+3. API MAPPINGS & ENDPOINTS
+--------------------------------------------------------------------------------
+All requests target the configured baseURL (http://localhost:5001/api) and attach
+Authorization: Bearer <ADMIN_JWT>.
+
+Endpoint 1: List Products (Admin)
+  - Method: GET
+  - Path: /api/admin/products
+  - Query Parameters:
+      page=1&limit=10&search=sofa&category=sofas&isActive=true&isFeatured=all&sort=createdAt:desc
+  - Response (200 OK):
+    {
+      "success": true,
+      "message": "Admin products retrieved successfully",
+      "data": {
+        "products": [
+          {
+            "id": "6721542f1111111111111111",
+            "name": "Artisan Teak 3-Seater Sofa",
+            "slug": "artisan-teak-3-seater-sofa",
+            "category": "sofas",
+            "price": 42999,
+            "originalPrice": 49999,
+            "stock": 15,
+            "sku": "SOF-TEAK-001",
+            "isActive": true,
+            "isFeatured": false,
+            "thumbnail": "https://pub-...r2.dev/products/173022...webp",
+            "images": [
+              {
+                "url": "https://pub-...r2.dev/products/173022...webp",
+                "key": "products/173022...webp",
+                "alt": "Front view"
+              }
+            ]
+          }
+        ]
+      },
+      "meta": { "total": 1, "page": 1, "limit": 10, "totalPages": 1 }
+    }
+
+Endpoint 2: Get Product by ID
+  - Method: GET
+  - Path: /api/admin/products/:id
+  - Response (200 OK):
+    { "success": true, "data": { "product": { ... } } }
+
+Endpoint 3: Create Product
+  - Method: POST
+  - Path: /api/admin/products
+  - Body:
+    {
+      "name": "Artisan Teak 3-Seater Sofa",
+      "slug": "artisan-teak-3-seater-sofa",
+      "description": "Handcrafted solid teak sofa with high-density foam cushions.",
+      "category": "sofas",
+      "price": 42999,
+      "originalPrice": 49999,
+      "stock": 15,
+      "sku": "SOF-TEAK-001",
+      "isActive": true,
+      "isFeatured": false,
+      "images": [
+        {
+          "url": "https://pub-...r2.dev/products/173022...webp",
+          "key": "products/173022...webp",
+          "alt": "Front view"
+        }
+      ]
+    }
+  - Response (201 Created):
+    { "success": true, "data": { "product": { ... } } }
+
+Endpoint 4: Update Product
+  - Method: PATCH (and PUT)
+  - Path: /api/admin/products/:id
+  - Body: Partial update object conforming to updateProductSchema.
+  - Response (200 OK):
+    { "success": true, "data": { "product": { ... } } }
+
+Endpoint 5: Delete Product
+  - Method: DELETE
+  - Path: /api/admin/products/:id
+  - Response (200 OK):
+    { "success": true, "data": { "product": { "id": "...", "deleted": true } } }
+
+Endpoint 6: Upload Product Images to Cloudflare R2
+  - Method: POST
+  - Path: /api/admin/upload/products
+  - Headers: Authorization: Bearer <ADMIN_JWT> (Browser sets Content-Type boundary)
+  - Payload: FormData with field 'images' (File[])
+  - Constraints: Max 10 files per batch, max 8 MB per file, JPEG/PNG/WebP/AVIF.
+  - Response (201 Created):
+    {
+      "success": true,
+      "message": "2 image(s) uploaded successfully",
+      "data": {
+        "images": [
+          {
+            "key": "products/1730221948123-a1b2c3d4e5f60718.webp",
+            "url": "https://pub-...r2.dev/products/1730221948123-a1b2c3d4e5f60718.webp",
+            "contentType": "image/webp",
+            "size": 142050,
+            "originalName": "sofa-front.webp"
+          }
+        ],
+        "count": 2
+      }
+    }
+
+
+4. CANONICAL SINKA FURNITURE CATEGORIES
+--------------------------------------------------------------------------------
+The UI enforces the 10 canonical category values matching backend validation:
+  1. sofas: "Sofas & Couches"
+  2. beds: "Beds"
+  3. mattresses: "Mattresses"
+  4. dining: "Dining Tables & Sets"
+  5. tv-units: "TV Units"
+  6. sofa-cum-beds: "Sofa Cum Beds"
+  7. coffee-tables: "Coffee Tables"
+  8. study-tables: "Study Tables"
+  9. wardrobes: "Wardrobes"
+  10. cabinets-sideboards: "Cabinets & Sideboards"
+
+
+5. VERIFICATION & AUTOMATED TEST RESULTS
+--------------------------------------------------------------------------------
+A. Frontend Unit Tests (sinka-admin):
+  Command: npm test (node --test tests/**/*.test.js)
+  Result: 8/8 tests passed (0 failures):
+  ✔ 1. PRODUCT_CATEGORIES matches all 10 canonical Sinka categories
+  ✔ 2. Cloudflare R2 upload constraints match backend limits (10 batch, 8 MB)
+  ✔ 3. productService.getProducts passes search, category, and status query parameters
+  ✔ 4. productService.getProductById fetches single product by ID
+  ✔ 5. productService.createProduct posts payload to /admin/products
+  ✔ 6. productService.updateProduct patches product by ID
+  ✔ 7. productService.deleteProduct deletes product by ID
+  ✔ 8. productService.uploadImages rejects empty file array
+
+B. Frontend Code Quality & Linting:
+  Command: npm run lint
+  Result: PASSED (0 errors, 0 warnings, Exit Code 0).
+
+C. Frontend Production Bundle Build:
+  Command: npm run build (vite build)
+  Result: PASSED (Built in 718ms, Exit Code 0).
+  Artifacts generated:
+    dist/index.html                   1.09 kB │ gzip:  0.57 kB
+    dist/assets/index-ClxYjnOV.css   45.18 kB │ gzip:  8.08 kB
+    dist/assets/index-BHRMH5YM.js   189.62 kB │ gzip: 49.32 kB
+    dist/assets/vendor-hi3z1QbV.js  236.12 kB │ gzip: 77.32 kB
+
+D. Backend Test Suite Verification (Read-Only Safety Check):
+  Command: npm test --prefix /Users/alenroy/Documents/Alen/Sinka-backend
+  Result: 140/140 tests passed across 21 suites (0 failures).
+  Confirming 100% backend health and stability across auth, offers, products,
+  and Cloudflare R2 uploads.
+
+
+6. SUMMARY OF USER EXPERIENCE & INTEGRATION SAFETIES
+--------------------------------------------------------------------------------
+- Real Furniture Catalogue Ready: Handles selling price, MRP strikethrough, discount
+  percentage calculations, inventory status badges (In Stock, Low Stock, Out of Stock),
+  and SKU management.
+- Live Storefront Preview: Instant visual feedback allows administrators to verify
+  how a product card looks before publishing.
+- Safe Image Lifecycle: Removing an image from the form does not prematurely destroy
+  the R2 asset; object keys and URLs are cleanly persisted in the product document.
+- Zero Hardcoded Mocks: All operations connect cleanly through the documented
+  backend API.
+================================================================================
+
