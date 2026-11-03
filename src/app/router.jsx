@@ -6,6 +6,8 @@ import ProductsListPage from '../pages/products/ProductsListPage.jsx';
 import ProductFormPage from '../pages/products/ProductFormPage.jsx';
 import OffersListPage from '../pages/offers/OffersListPage.jsx';
 import OfferFormPage from '../pages/offers/OfferFormPage.jsx';
+import BannersListPage from '../pages/banners/BannersListPage.jsx';
+import BannerFormPage from '../pages/banners/BannerFormPage.jsx';
 import NotFoundPage from '../pages/NotFoundPage.jsx';
 import ProtectedRoute from '../components/layout/ProtectedRoute.jsx';
 import { ROUTES } from '../constants.js';
@@ -53,6 +55,18 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.OFFERS_EDIT,
         element: <OfferFormPage />,
+      },
+      {
+        path: ROUTES.BANNERS,
+        element: <BannersListPage />,
+      },
+      {
+        path: ROUTES.BANNERS_NEW,
+        element: <BannerFormPage />,
+      },
+      {
+        path: ROUTES.BANNERS_EDIT,
+        element: <BannerFormPage />,
       },
     ],
   },

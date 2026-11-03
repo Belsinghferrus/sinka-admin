@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Package, Tag, LogOut, ShieldCheck, X } from 'lucide-react';
+import { LayoutDashboard, Image as ImageIcon, Package, Tag, LogOut, ShieldCheck, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { ROUTES } from '../../constants.js';
 
@@ -11,6 +11,11 @@ export function Sidebar({ isOpen, onClose }) {
       name: 'Dashboard',
       path: ROUTES.DASHBOARD,
       icon: LayoutDashboard,
+    },
+    {
+      name: 'Homepage Banners',
+      path: ROUTES.BANNERS,
+      icon: ImageIcon,
     },
     {
       name: 'Products',

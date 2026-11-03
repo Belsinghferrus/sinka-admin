@@ -125,9 +125,11 @@ apiClient.interceptors.response.use(
       });
     }
 
-    const { status, data } = error.response;
+    const { status, data, headers } = error.response;
     const backendMessage = data?.error?.message || data?.message;
     const backendCode = data?.error?.code || (data?.success === false ? 'API_ERROR' : undefined);
+    const retryAfterHeader = headers?.['retry-after'];
+    const retryAfterSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : null;
 
     let fallbackMessage = 'An unexpected error occurred. Please try again.';
     if (status === 400) fallbackMessage = 'Invalid request parameters.';
@@ -138,13 +140,18 @@ apiClient.interceptors.response.use(
     if (status === 403) fallbackMessage = 'Access denied. You do not possess administrator permissions for this resource.';
     if (status === 404) fallbackMessage = 'Requested resource not found.';
     if (status === 409) fallbackMessage = 'A conflict occurred with the current state of the resource.';
-    if (status === 429) fallbackMessage = 'Too many requests. Please slow down and try again later.';
+    if (status === 429) {
+      fallbackMessage = retryAfterSeconds
+        ? `Too many requests. Please wait ${retryAfterSeconds} seconds before trying again.`
+        : 'Too many requests. Please slow down and try again later.';
+    }
     if (status >= 500) fallbackMessage = 'The server encountered an internal error. Please try again later.';
 
     const standardizedError = {
       status,
       code: backendCode || `HTTP_${status}`,
       message: backendMessage || fallbackMessage,
+      retryAfter: retryAfterSeconds,
       data: data?.data || null,
       details: data?.error?.details || null,
     };

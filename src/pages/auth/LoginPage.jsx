@@ -44,6 +44,8 @@ export function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return; // Prevent duplicate in-flight requests
+
     setLocalError(null);
     clearError();
 
@@ -55,7 +57,10 @@ export function LoginPage() {
     try {
       await login({ email: email.trim(), password });
     } catch (err) {
-      setLocalError(err.message || 'Invalid email or password. Please try again.');
+      const errorMsg = err.message || (err.status === 429
+        ? 'Too many login attempts. Please wait a moment before trying again.'
+        : 'Invalid email or password. Please try again.');
+      setLocalError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -117,6 +122,7 @@ export function LoginPage() {
                   autoComplete="username"
                   autoFocus
                   required
+                  disabled={isSubmitting}
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -126,6 +132,8 @@ export function LoginPage() {
                   }}
                   placeholder="admin@sinka.com"
                   className={`w-full pl-9 pr-3.5 py-2.5 rounded-md border text-sm text-stone-900 bg-white placeholder-stone-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                    isSubmitting ? 'opacity-60 cursor-not-allowed bg-stone-50' : ''
+                  } ${
                     fieldErrors.email
                       ? 'border-red-500 focus:border-red-500 focus:ring-red-400'
                       : 'border-stone-300 focus:border-stone-800 focus:ring-stone-400'
@@ -157,6 +165,7 @@ export function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
+                  disabled={isSubmitting}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -166,6 +175,8 @@ export function LoginPage() {
                   }}
                   placeholder="Enter your password"
                   className={`w-full pl-9 pr-10 py-2.5 rounded-md border text-sm text-stone-900 bg-white placeholder-stone-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                    isSubmitting ? 'opacity-60 cursor-not-allowed bg-stone-50' : ''
+                  } ${
                     fieldErrors.password
                       ? 'border-red-500 focus:border-red-500 focus:ring-red-400'
                       : 'border-stone-300 focus:border-stone-800 focus:ring-stone-400'
@@ -176,8 +187,11 @@ export function LoginPage() {
                 <Lock className="w-4 h-4 text-stone-400 absolute left-3 top-3 pointer-events-none" aria-hidden="true" />
                 <button
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 p-1 text-stone-400 hover:text-stone-700 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                  className={`absolute right-3 top-2.5 p-1 text-stone-400 hover:text-stone-700 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary ${
+                    isSubmitting ? 'cursor-not-allowed opacity-50' : ''
+                  }`}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   title={showPassword ? 'Hide password' : 'Show password'}
                 >

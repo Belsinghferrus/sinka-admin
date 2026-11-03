@@ -17,12 +17,19 @@ export const ROUTES = {
   OFFERS: '/offers',
   OFFERS_NEW: '/offers/new',
   OFFERS_EDIT: '/offers/:id/edit',
+  BANNERS: '/banners',
+  BANNERS_NEW: '/banners/new',
+  BANNERS_EDIT: '/banners/:id/edit',
 };
 
 export const NAVIGATION_ITEMS = [
   {
     name: 'Dashboard',
     path: ROUTES.DASHBOARD,
+  },
+  {
+    name: 'Homepage Banners',
+    path: ROUTES.BANNERS,
   },
   {
     name: 'Products',
@@ -65,3 +72,11 @@ export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'im
 export const MAX_OFFER_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 export const ALLOWED_OFFER_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const ALLOWED_OFFER_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+
+/**
+ * Cloudflare R2 Homepage Hero Banner Limits
+ * Supports JPEG, PNG, WebP, and AVIF up to 8 MB under the banners/ prefix.
+ */
+export const MAX_BANNER_IMAGE_SIZE_BYTES = 8 * 1024 * 1024; // 8 MB
+export const ALLOWED_BANNER_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+export const ALLOWED_BANNER_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.avif'];

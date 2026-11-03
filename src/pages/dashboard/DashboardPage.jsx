@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ShieldCheck, Layers, Database, Tag, Package, Plus, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Layers, Database, Tag, Package, Image as ImageIcon, Plus, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { ROUTES } from '../../constants.js';
 
@@ -21,11 +21,18 @@ export function DashboardPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            to={ROUTES.PRODUCTS_NEW}
+            to={ROUTES.BANNERS_NEW}
             className="inline-flex items-center space-x-1.5 px-3 py-2 bg-brand-primary text-white text-xs font-semibold rounded-md shadow-xs hover:bg-brand-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Product</span>
+            <span>Add Banner</span>
+          </Link>
+          <Link
+            to={ROUTES.BANNERS}
+            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-stone-100 text-stone-700 text-xs font-semibold rounded-md hover:bg-stone-200/80 transition-colors"
+          >
+            <ImageIcon className="w-4 h-4" />
+            <span>Banners</span>
           </Link>
           <Link
             to={ROUTES.PRODUCTS}
@@ -108,7 +115,93 @@ export function DashboardPage() {
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>Promotional Offers CRUD (<code className="font-mono">/api/admin/offers/*</code>)</span>
             </li>
+            <li className="flex items-center space-x-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Homepage Banners &amp; Reordering (<code className="font-mono">/api/admin/banners/*</code>, <code className="font-mono">/api/admin/upload/banners</code>)</span>
+            </li>
           </ul>
+        </div>
+      </div>
+
+      {/* Homepage Banners Quick Management Panel */}
+      <div className="bg-white rounded-lg border border-stone-200 p-5 shadow-xs">
+        <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-md bg-stone-100 text-stone-800">
+              <ImageIcon className="w-5 h-5 text-brand-primary" />
+            </div>
+            <div>
+              <h3 className="text-base font-heading font-semibold text-stone-900">
+                Homepage Hero Banners
+              </h3>
+              <p className="text-xs text-stone-500">
+                Curate storefront hero carousel slides, customize typography, and adjust display priorities
+              </p>
+            </div>
+          </div>
+          <Link
+            to={ROUTES.BANNERS}
+            className="text-xs font-semibold text-brand-primary hover:text-brand-primary-hover flex items-center space-x-1"
+          >
+            <span>Manage Banners</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
+            <div>
+              <p className="font-semibold text-stone-900">Hero Carousel Curation</p>
+              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
+                Create slides with high-res photography, eyebrows, headlines, descriptions, and custom CTAs.
+              </p>
+            </div>
+            <div className="mt-3">
+              <Link
+                to={ROUTES.BANNERS_NEW}
+                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
+              >
+                <span>Add hero slide</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
+            <div>
+              <p className="font-semibold text-stone-900">Storefront Carousel Preview</p>
+              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
+                Inspect how banners look on desktop and mobile viewports with live typography, overlays, and controls.
+              </p>
+            </div>
+            <div className="mt-3">
+              <Link
+                to={ROUTES.BANNERS}
+                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
+              >
+                <span>Launch preview</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
+            <div>
+              <p className="font-semibold text-stone-900">Display Priority &amp; Reordering</p>
+              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
+                Instantly adjust slide sequence with one-click reordering controls synced with backend atomic reorder.
+              </p>
+            </div>
+            <div className="mt-3">
+              <Link
+                to={ROUTES.BANNERS}
+                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
+              >
+                <span>Reorder sequence</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 
