@@ -1,23 +1,29 @@
-import { useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth.js';
-import Button from '../../components/ui/Button.jsx';
-import { ROUTES } from '../../constants.js';
+import { useState } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { Lock, Mail, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth.js";
+import Button from "../../components/ui/Button.jsx";
+import { ROUTES } from "../../constants.js";
 
 export function LoginPage() {
-  const { user, isAuthenticated, login, error: authError, clearError } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    login,
+    error: authError,
+    clearError,
+  } = useAuth();
   const location = useLocation();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [localError, setLocalError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
 
   // If already authenticated with 'admin' role, redirect to target page or dashboard
-  if (isAuthenticated && user?.role === 'admin') {
+  if (isAuthenticated && user?.role === "admin") {
     const destination = location.state?.from?.pathname || ROUTES.DASHBOARD;
     return <Navigate to={destination} replace />;
   }
@@ -29,13 +35,13 @@ export function LoginPage() {
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail) {
-      errors.email = 'Email address is required.';
+      errors.email = "Email address is required.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      errors.email = 'Please enter a valid email address.';
+      errors.email = "Please enter a valid email address.";
     }
 
     if (!password) {
-      errors.password = 'Password is required.';
+      errors.password = "Password is required.";
     }
 
     setFieldErrors(errors);
@@ -57,9 +63,11 @@ export function LoginPage() {
     try {
       await login({ email: email.trim(), password });
     } catch (err) {
-      const errorMsg = err.message || (err.status === 429
-        ? 'Too many login attempts. Please wait a moment before trying again.'
-        : 'Invalid email or password. Please try again.');
+      const errorMsg =
+        err.message ||
+        (err.status === 429
+          ? "Too many login attempts. Please wait a moment before trying again."
+          : "Invalid email or password. Please try again.");
       setLocalError(errorMsg);
     } finally {
       setIsSubmitting(false);
@@ -71,9 +79,26 @@ export function LoginPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         {/* Sinka Brand Emblem */}
         <div className="w-12 h-12 mx-auto rounded-lg bg-brand-primary flex items-center justify-center text-white shadow-xs mb-3">
-          <svg className="w-7 h-7" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-            <path d="M14 34L32 18L50 34" stroke="#B91F2B" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M22 46V36L32 26L42 36V46" stroke="#FFFFFF" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          <svg
+            className="w-7 h-7"
+            viewBox="0 0 64 64"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M14 34L32 18L50 34"
+              stroke="#B91F2B"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M22 46V36L32 26L42 36V46"
+              stroke="#FFFFFF"
+              strokeWidth="5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
 
@@ -97,7 +122,10 @@ export function LoginPage() {
               className="mb-6 rounded-md bg-red-50 border border-red-200 p-4 text-xs text-red-800 space-y-1.5"
             >
               <div className="flex items-center space-x-2 font-semibold text-red-900">
-                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" aria-hidden="true" />
+                <AlertCircle
+                  className="w-4 h-4 text-red-600 shrink-0"
+                  aria-hidden="true"
+                />
                 <span>Authentication Failed</span>
               </div>
               <p className="leading-relaxed pl-6">{activeError}</p>
@@ -132,16 +160,23 @@ export function LoginPage() {
                   }}
                   placeholder="admin@sinka.com"
                   className={`w-full pl-9 pr-3.5 py-2.5 rounded-md border text-sm text-stone-900 bg-white placeholder-stone-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                    isSubmitting ? 'opacity-60 cursor-not-allowed bg-stone-50' : ''
+                    isSubmitting
+                      ? "opacity-60 cursor-not-allowed bg-stone-50"
+                      : ""
                   } ${
                     fieldErrors.email
-                      ? 'border-red-500 focus:border-red-500 focus:ring-red-400'
-                      : 'border-stone-300 focus:border-stone-800 focus:ring-stone-400'
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-400"
+                      : "border-stone-300 focus:border-stone-800 focus:ring-stone-400"
                   }`}
                   aria-invalid={Boolean(fieldErrors.email)}
-                  aria-describedby={fieldErrors.email ? 'admin-email-error' : undefined}
+                  aria-describedby={
+                    fieldErrors.email ? "admin-email-error" : undefined
+                  }
                 />
-                <Mail className="w-4 h-4 text-stone-400 absolute left-3 top-3 pointer-events-none" aria-hidden="true" />
+                <Mail
+                  className="w-4 h-4 text-stone-400 absolute left-3 top-3 pointer-events-none"
+                  aria-hidden="true"
+                />
               </div>
               {fieldErrors.email && (
                 <p id="admin-email-error" className="text-xs text-red-600 mt-1">
@@ -162,7 +197,7 @@ export function LoginPage() {
                 <input
                   id="admin-password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
                   disabled={isSubmitting}
@@ -175,25 +210,32 @@ export function LoginPage() {
                   }}
                   placeholder="Enter your password"
                   className={`w-full pl-9 pr-10 py-2.5 rounded-md border text-sm text-stone-900 bg-white placeholder-stone-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                    isSubmitting ? 'opacity-60 cursor-not-allowed bg-stone-50' : ''
+                    isSubmitting
+                      ? "opacity-60 cursor-not-allowed bg-stone-50"
+                      : ""
                   } ${
                     fieldErrors.password
-                      ? 'border-red-500 focus:border-red-500 focus:ring-red-400'
-                      : 'border-stone-300 focus:border-stone-800 focus:ring-stone-400'
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-400"
+                      : "border-stone-300 focus:border-stone-800 focus:ring-stone-400"
                   }`}
                   aria-invalid={Boolean(fieldErrors.password)}
-                  aria-describedby={fieldErrors.password ? 'admin-password-error' : undefined}
+                  aria-describedby={
+                    fieldErrors.password ? "admin-password-error" : undefined
+                  }
                 />
-                <Lock className="w-4 h-4 text-stone-400 absolute left-3 top-3 pointer-events-none" aria-hidden="true" />
+                <Lock
+                  className="w-4 h-4 text-stone-400 absolute left-3 top-3 pointer-events-none"
+                  aria-hidden="true"
+                />
                 <button
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => setShowPassword(!showPassword)}
                   className={`absolute right-3 top-2.5 p-1 text-stone-400 hover:text-stone-700 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary ${
-                    isSubmitting ? 'cursor-not-allowed opacity-50' : ''
+                    isSubmitting ? "cursor-not-allowed opacity-50" : ""
                   }`}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" aria-hidden="true" />
@@ -203,7 +245,10 @@ export function LoginPage() {
                 </button>
               </div>
               {fieldErrors.password && (
-                <p id="admin-password-error" className="text-xs text-red-600 mt-1">
+                <p
+                  id="admin-password-error"
+                  className="text-xs text-red-600 mt-1"
+                >
                   {fieldErrors.password}
                 </p>
               )}
@@ -227,7 +272,8 @@ export function LoginPage() {
           {/* Security Notice */}
           <div className="mt-6 pt-5 border-t border-stone-100 text-center">
             <p className="text-[11px] text-stone-400 leading-relaxed">
-              Protected administrative area. All access attempts are logged and monitored.
+              Protected administrative area. All access attempts are logged and
+              monitored.
             </p>
           </div>
         </div>

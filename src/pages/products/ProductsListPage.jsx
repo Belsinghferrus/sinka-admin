@@ -24,6 +24,7 @@ import Button from '../../components/ui/Button.jsx';
 import LoadingIndicator from '../../components/ui/LoadingIndicator.jsx';
 import ProductDetailModal from '../../components/products/ProductDetailModal.jsx';
 import { PRODUCT_CATEGORIES, ROUTES } from '../../constants.js';
+import { formatCurrency } from '../../utils/formatCurrency.js';
 
 export function ProductsListPage() {
   const [products, setProducts] = useState([]);
@@ -382,11 +383,11 @@ export function ProductsListPage() {
                       {/* Pricing */}
                       <td className="px-4 py-3.5 whitespace-nowrap">
                         <div className="font-semibold text-stone-900">
-                          ₹{product.price?.toLocaleString('en-IN')}
+                          {formatCurrency(product.price)}
                         </div>
                         {hasDiscount && (
                           <div className="text-[10px] text-stone-400 line-through">
-                            ₹{product.originalPrice?.toLocaleString('en-IN')}
+                            {formatCurrency(product.originalPrice)}
                           </div>
                         )}
                       </td>

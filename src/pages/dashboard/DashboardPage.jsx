@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ShieldCheck, Layers, Database, Tag, Package, Image as ImageIcon, Plus, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Layers, Database, Tag, Package, Image as ImageIcon, ShoppingBag, Truck, Plus, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { ROUTES } from '../../constants.js';
 
@@ -21,8 +21,15 @@ export function DashboardPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            to={ROUTES.BANNERS_NEW}
+            to={ROUTES.ORDERS}
             className="inline-flex items-center space-x-1.5 px-3 py-2 bg-brand-primary text-white text-xs font-semibold rounded-md shadow-xs hover:bg-brand-primary/90 transition-colors"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span>Orders</span>
+          </Link>
+          <Link
+            to={ROUTES.BANNERS_NEW}
+            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-stone-100 text-stone-700 text-xs font-semibold rounded-md hover:bg-stone-200/80 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Add Banner</span>
@@ -117,9 +124,95 @@ export function DashboardPage() {
             </li>
             <li className="flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Order Management &amp; Fulfillment (<code className="font-mono">/api/admin/orders/*</code>)</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>Homepage Banners &amp; Reordering (<code className="font-mono">/api/admin/banners/*</code>, <code className="font-mono">/api/admin/upload/banners</code>)</span>
             </li>
           </ul>
+        </div>
+      </div>
+
+      {/* Order Management Quick Panel */}
+      <div className="bg-white rounded-lg border border-stone-200 p-5 shadow-xs">
+        <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-md bg-stone-100 text-stone-800">
+              <ShoppingBag className="w-5 h-5 text-brand-primary" />
+            </div>
+            <div>
+              <h3 className="text-base font-heading font-semibold text-stone-900">
+                Order Fulfillment &amp; Operations
+              </h3>
+              <p className="text-xs text-stone-500">
+                Track customer orders, manage lifecycle status transitions, assign courier tracking, and inspect financial summaries
+              </p>
+            </div>
+          </div>
+          <Link
+            to={ROUTES.ORDERS}
+            className="text-xs font-semibold text-brand-primary hover:text-brand-primary-hover flex items-center space-x-1"
+          >
+            <span>View All Orders</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
+            <div>
+              <p className="font-semibold text-stone-900">Order Management Table</p>
+              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
+                Filter by lifecycle status, payment status, and custom date ranges. Search across order numbers, customer names, emails, and phone numbers.
+              </p>
+            </div>
+            <div className="mt-3">
+              <Link
+                to={ROUTES.ORDERS}
+                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
+              >
+                <span>Browse orders</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
+            <div>
+              <p className="font-semibold text-stone-900">Courier Tracking &amp; Auto-Ship</p>
+              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
+                Assign AWB numbers with auto-generated tracking links for Delhivery, BlueDart, DTDC, IndiaPost, and Shiprocket. Auto-advances early orders to Shipped.
+              </p>
+            </div>
+            <div className="mt-3">
+              <Link
+                to={ROUTES.ORDERS}
+                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
+              >
+                <span>Manage logistics</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
+            <div>
+              <p className="font-semibold text-stone-900">Lifecycle State Machine</p>
+              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
+                Strict transitions from Pending to Accepted, Processing, Packed, Shipped, Out for Delivery, and Delivered. Automatic inventory restoration on cancellation.
+              </p>
+            </div>
+            <div className="mt-3">
+              <Link
+                to={ROUTES.ORDERS}
+                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
+              >
+                <span>Inspect workflows</span>
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 

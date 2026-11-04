@@ -19,6 +19,7 @@ import Button from '../../components/ui/Button.jsx';
 import LoadingIndicator from '../../components/ui/LoadingIndicator.jsx';
 import ProductImageUploader from '../../components/products/ProductImageUploader.jsx';
 import { PRODUCT_CATEGORIES, ROUTES } from '../../constants.js';
+import { formatCurrency, parseCurrencyInput } from '../../utils/formatCurrency.js';
 
 export function ProductFormPage() {
   const { id } = useParams();
@@ -147,16 +148,16 @@ export function ProductFormPage() {
       errors.category = 'Please select a valid category.';
     }
 
-    const priceNum = Number(formData.price);
-    if (formData.price === '' || isNaN(priceNum)) {
+    const priceNum = parseCurrencyInput(formData.price);
+    if (formData.price === '' || formData.price === null || formData.price === undefined || Number.isNaN(priceNum)) {
       errors.price = 'Selling price is required.';
     } else if (priceNum < 0) {
       errors.price = 'Price cannot be negative.';
     }
 
     if (formData.originalPrice !== '' && formData.originalPrice != null) {
-      const originalNum = Number(formData.originalPrice);
-      if (isNaN(originalNum) || originalNum < 0) {
+      const originalNum = parseCurrencyInput(formData.originalPrice);
+      if (Number.isNaN(originalNum) || originalNum < 0) {
         errors.originalPrice = 'Original price must be a valid non-negative number.';
       }
     }
@@ -183,13 +184,19 @@ export function ProductFormPage() {
     setIsSubmitting(true);
     setError(null);
 
+    const parsedPrice = parseCurrencyInput(formData.price);
+    const parsedOriginalPrice =
+      formData.originalPrice !== '' && formData.originalPrice != null
+        ? parseCurrencyInput(formData.originalPrice)
+        : null;
+
     const payload = {
       name: formData.name.trim(),
       slug: formData.slug.trim() || slugify(formData.name),
       description: formData.description.trim(),
       category: formData.category,
-      price: Number(formData.price),
-      originalPrice: formData.originalPrice !== '' ? Number(formData.originalPrice) : null,
+      price: parsedPrice,
+      originalPrice: parsedOriginalPrice,
       stock: Number(formData.stock),
       sku: formData.sku.trim() || null,
       isActive: Boolean(formData.isActive),
@@ -230,8 +237,8 @@ export function ProductFormPage() {
 
   // Cover image for live preview
   const coverImage = formData.images[0]?.url;
-  const currentPrice = Number(formData.price) || 0;
-  const originalPriceNum = Number(formData.originalPrice) || 0;
+  const currentPrice = parseCurrencyInput(formData.price) || 0;
+  const originalPriceNum = parseCurrencyInput(formData.originalPrice) || 0;
   const hasDiscount = originalPriceNum > currentPrice && currentPrice > 0;
   const discountPercent = hasDiscount
     ? Math.round(((originalPriceNum - currentPrice) / originalPriceNum) * 100)
@@ -402,7 +409,7 @@ export function ProductFormPage() {
                       id="price"
                       name="price"
                       min="0"
-                      step="1"
+                      step="any"
                       value={formData.price}
                       onChange={handleChange}
                       placeholder="38999"
@@ -432,7 +439,7 @@ export function ProductFormPage() {
                       id="originalPrice"
                       name="originalPrice"
                       min="0"
-                      step="1"
+                      step="any"
                       value={formData.originalPrice}
                       onChange={handleChange}
                       placeholder="45999"
@@ -639,12 +646,12 @@ export function ProductFormPage() {
 
                   <div className="flex items-baseline space-x-2">
                     <span className="font-heading font-bold text-sm text-stone-900">
-                      ₹{currentPrice.toLocaleString('en-IN')}
+                      {formatCurrency(currentPrice)}
                     </span>
                     {hasDiscount && (
                       <>
                         <span className="text-[11px] text-stone-400 line-through">
-                          ₹{originalPriceNum.toLocaleString('en-IN')}
+                          {formatCurrency(originalPriceNum)}
                         </span>
                         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded">
                           {discountPercent}% OFF

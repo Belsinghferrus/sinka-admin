@@ -2,6 +2,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import AdminLayout from '../layouts/AdminLayout.jsx';
 import DashboardPage from '../pages/dashboard/DashboardPage.jsx';
 import LoginPage from '../pages/auth/LoginPage.jsx';
+import OrdersListPage from '../pages/orders/OrdersListPage.jsx';
+import OrderDetailPage from '../pages/orders/OrderDetailPage.jsx';
 import ProductsListPage from '../pages/products/ProductsListPage.jsx';
 import ProductFormPage from '../pages/products/ProductFormPage.jsx';
 import OffersListPage from '../pages/offers/OffersListPage.jsx';
@@ -31,6 +33,14 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.DASHBOARD,
         element: <DashboardPage />,
+      },
+      {
+        path: ROUTES.ORDERS,
+        element: <OrdersListPage />,
+      },
+      {
+        path: ROUTES.ORDERS_DETAIL,
+        element: <OrderDetailPage />,
       },
       {
         path: ROUTES.PRODUCTS,

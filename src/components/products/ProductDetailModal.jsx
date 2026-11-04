@@ -14,6 +14,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { PRODUCT_CATEGORIES, ROUTES } from '../../constants.js';
+import { formatCurrency } from '../../utils/formatCurrency.js';
 
 export function ProductDetailModal({ product, isOpen, onClose }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -155,12 +156,12 @@ export function ProductDetailModal({ product, isOpen, onClose }) {
                 </span>
                 <div className="flex items-baseline space-x-2">
                   <span className="text-2xl font-heading font-bold text-stone-900">
-                    ₹{product.price?.toLocaleString('en-IN')}
+                    {formatCurrency(product.price)}
                   </span>
                   {hasDiscount && (
                     <>
                       <span className="text-sm text-stone-400 line-through">
-                        ₹{product.originalPrice?.toLocaleString('en-IN')}
+                        {formatCurrency(product.originalPrice)}
                       </span>
                       <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
                         {discountPercent}% OFF
@@ -170,7 +171,7 @@ export function ProductDetailModal({ product, isOpen, onClose }) {
                 </div>
                 {hasDiscount && (
                   <p className="text-[11px] text-emerald-700 font-medium">
-                    Customer saves ₹{(product.originalPrice - product.price).toLocaleString('en-IN')}
+                    Customer saves {formatCurrency(product.originalPrice - product.price)}
                   </p>
                 )}
               </div>
