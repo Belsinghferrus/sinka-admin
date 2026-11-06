@@ -7,7 +7,7 @@ export function AdminLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col md:flex-row font-sans">
+    <div className="h-screen max-h-screen bg-stone-50 flex overflow-hidden font-sans">
       {/* Sidebar navigation */}
       <Sidebar
         isOpen={isSidebarOpen}
@@ -15,11 +15,13 @@ export function AdminLayout() {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <Header onOpenSidebar={() => setIsSidebarOpen(true)} />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl w-full mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

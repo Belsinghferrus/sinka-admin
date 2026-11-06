@@ -266,7 +266,7 @@ export function BannersListPage() {
             </h1>
           </div>
           <p className="mt-1 text-sm text-stone-500">
-            Curate hero carousel banners, adjust display order, and configure scheduled promotions.
+            Manage the storefront hero carousel and promotional banners.
           </p>
         </div>
 

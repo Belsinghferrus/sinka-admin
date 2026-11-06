@@ -126,9 +126,9 @@ export function ProductsListPage() {
             <span className="p-2 rounded-lg bg-stone-100 text-stone-800">
               <Package className="w-5 h-5 text-brand-primary" />
             </span>
-            <h2 className="text-xl sm:text-2xl font-heading font-semibold text-stone-900">
+            <h1 className="text-xl sm:text-2xl font-heading font-semibold text-stone-900">
               Product Catalogue
-            </h2>
+            </h1>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-stone-500">
             Manage your furniture catalogue, Cloudflare R2 media gallery, pricing, and stock levels.

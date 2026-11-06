@@ -1,28 +1,9 @@
-import { Menu, LogOut, ShieldCheck } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth.js';
-import { ROUTES } from '../../constants.js';
+import { Menu } from 'lucide-react';
+import AdminProfileCapsule from './AdminProfileCapsule.jsx';
 
 export function Header({ onOpenSidebar }) {
-  const location = useLocation();
-  const { user, logout } = useAuth();
-
-  const getPageTitle = (pathname) => {
-    if (pathname === ROUTES.DASHBOARD) return 'Dashboard';
-    if (pathname === ROUTES.LOGIN) return 'Authentication';
-    if (pathname === ROUTES.PRODUCTS) return 'Product Catalogue';
-    if (pathname === ROUTES.PRODUCTS_NEW) return 'Add New Product';
-    if (pathname.startsWith('/products/') && pathname.endsWith('/edit')) return 'Edit Product';
-    if (pathname === ROUTES.OFFERS) return 'Promotional Offers';
-    if (pathname === ROUTES.OFFERS_NEW) return 'Create Promotional Offer';
-    if (pathname.startsWith('/offers/') && pathname.endsWith('/edit')) return 'Edit Promotional Offer';
-    return 'Admin Panel';
-  };
-
-  const title = getPageTitle(location.pathname);
-
   return (
-    <header className="h-16 bg-white border-b border-stone-200 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 font-sans">
+    <header className="h-16 shrink-0 bg-white border-b border-stone-200 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 font-sans">
       <div className="flex items-center space-x-3">
         {/* Mobile menu button */}
         <button
@@ -34,48 +15,25 @@ export function Header({ onOpenSidebar }) {
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Breadcrumb / Title */}
-        <div className="flex items-center space-x-2 text-sm">
-          <span className="text-stone-400 font-medium hidden sm:inline">Sinka Admin</span>
-          <span className="text-stone-300 hidden sm:inline">/</span>
-          <h1 className="font-heading font-semibold text-stone-900 text-base sm:text-lg">
-            {title}
-          </h1>
+        {/* Global Branding & Context (Static across all pages) */}
+        <div className="flex items-center space-x-2.5">
+          <span className="font-heading font-semibold text-stone-900 text-sm sm:text-base tracking-tight">
+            Sinka Admin
+          </span>
+          <span className="text-stone-300 font-light select-none" aria-hidden="true">/</span>
+          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-stone-500 select-none">
+            Back Office
+          </span>
         </div>
       </div>
 
-      {/* Authenticated Admin Account Area */}
-      <div className="flex items-center space-x-3">
-        {user ? (
-          <div className="flex items-center space-x-3">
-            <div className="hidden sm:flex flex-col text-right">
-              <span className="text-xs font-semibold text-stone-900 truncate max-w-45">
-                {user.displayName || user.email}
-              </span>
-              <span className="text-[10px] text-emerald-700 font-medium flex items-center justify-end space-x-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-600 inline" />
-                <span>Verified Administrator</span>
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={logout}
-              className="p-1.5 rounded-md text-stone-500 hover:text-brand-secondary hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-secondary transition-colors"
-              title="Sign Out"
-              aria-label="Sign out of Sinka Admin"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-600 border border-stone-200">
-            Unauthenticated
-          </span>
-        )}
+      {/* Authenticated Admin Account Capsule */}
+      <div className="flex items-center">
+        <AdminProfileCapsule />
       </div>
     </header>
   );
 }
 
 export default Header;
+

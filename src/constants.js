@@ -246,3 +246,85 @@ export const COURIER_PROVIDERS = [
   { value: 'Other', label: 'Other Logistics Provider', autoUrl: false },
 ];
 
+/**
+ * Orders Analytics Chart Series Configuration.
+ */
+export const ORDERS_ANALYTICS_SERIES = [
+  {
+    key: 'total',
+    label: 'Total Orders',
+    color: '#48250F', // Sinka Brand Primary Brown
+    strokeWidth: 2.5,
+    dotRadius: 4,
+    description: 'Total orders placed on this date',
+  },
+  {
+    key: 'pending',
+    label: 'Pending',
+    color: '#F59E0B', // Amber / Orange
+    strokeWidth: 2,
+    dotRadius: 3.5,
+    description: 'Orders awaiting admin confirmation',
+  },
+  {
+    key: 'accepted',
+    label: 'Accepted',
+    color: '#0284C7', // Sky Blue
+    strokeWidth: 2,
+    dotRadius: 3.5,
+    description: 'Orders accepted by administrator',
+  },
+  {
+    key: 'processing',
+    label: 'Processing',
+    color: '#3B82F6', // Blue
+    strokeWidth: 2,
+    dotRadius: 3.5,
+    description: 'Orders in fulfillment processing',
+  },
+  {
+    key: 'packed',
+    label: 'Packed',
+    color: '#6366F1', // Indigo
+    strokeWidth: 2,
+    dotRadius: 3.5,
+    description: 'Orders packaged and ready for dispatch',
+  },
+  {
+    key: 'shipped',
+    label: 'Shipped',
+    color: '#8B5CF6', // Purple
+    strokeWidth: 2,
+    dotRadius: 3.5,
+    description: 'Orders dispatched or out for delivery',
+  },
+  {
+    key: 'delivered',
+    label: 'Delivered',
+    color: '#10B981', // Emerald Green
+    strokeWidth: 2,
+    dotRadius: 3.5,
+    description: 'Orders successfully delivered',
+  },
+  {
+    key: 'cancelled',
+    label: 'Cancelled',
+    color: '#EF4444', // Red / Rose
+    strokeWidth: 2,
+    dotRadius: 3.5,
+    description: 'Orders cancelled or rejected',
+  },
+];
+
+/**
+ * Orders Analytics Chart Range Options.
+ */
+export const ORDERS_ANALYTICS_RANGES = [
+  { key: '7d', label: '7 Days' },
+  { key: '14d', label: '14 Days' },
+  { key: '30d', label: '30 Days' },
+  { key: '90d', label: '90 Days' },
+  { key: '1y', label: '1 Year' },
+];
+
+

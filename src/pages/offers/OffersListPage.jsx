@@ -120,11 +120,16 @@ export function OffersListPage() {
       {/* Page Title & Top Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-heading font-semibold text-stone-900 tracking-tight">
-            Promotional Offers
-          </h1>
-          <p className="mt-1 text-xs text-stone-500">
-            Create, manage, and curate customer promotional popups and banners.
+          <div className="flex items-center space-x-2.5">
+            <span className="p-2 rounded-lg bg-stone-100 text-stone-800">
+              <Tag className="w-5 h-5 text-brand-primary" />
+            </span>
+            <h1 className="text-xl sm:text-2xl font-heading font-semibold text-stone-900 tracking-tight">
+              Promotional Offers
+            </h1>
+          </div>
+          <p className="mt-1 text-xs sm:text-sm text-stone-500">
+            Create and manage promotional campaigns displayed across the storefront.
           </p>
         </div>
 

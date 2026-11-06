@@ -1,0 +1,202 @@
+================================================================================
+SINKA HOME & LIVING — ADMIN ORDERS ANALYTICS CHART IMPLEMENTATION REPORT
+================================================================================
+Generated: 2026-11-06
+Repository: sinka-admin & Sinka-backend
+Status: COMPLETED & VERIFIED (Zero Dummy Data, Real MongoDB Aggregation)
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & ZERO DUMMY DATA CONFIRMATION
+--------------------------------------------------------------------------------
+A dedicated, real-data Orders Analytics chart has been successfully implemented on
+the Sinka Admin Dashboard.
+
+STRICT INVARIANT CONFIRMATION:
+- ZERO dummy data is used.
+- ZERO hardcoded chart arrays or mock percentages exist in the codebase.
+- ZERO fake order counts or static dates are rendered.
+- The chart directly consumes live data aggregated from the MongoDB `Order` collection
+  via the authenticated endpoint: GET /api/admin/dashboard/orders-analytics.
+- The backend aggregation pipeline groups orders by calendar date (UTC/IST) and
+  dynamically tabulates actual lifecycle states. Missing calendar dates are zero-filled
+  to guarantee a continuous timeline without fabricated gaps.
+
+--------------------------------------------------------------------------------
+2. BACKEND API SPECIFICATION & IMPLEMENTATION
+--------------------------------------------------------------------------------
+Endpoint:
+  GET /api/admin/dashboard/orders-analytics?range=7d|14d|30d
+
+Authentication & Access Control:
+  - Protected with `requireAdminAuth` middleware.
+  - Requires a valid 24-hour administrator JWT issued by /api/admin/auth/login.
+  - Customer Firebase ID tokens and unauthenticated requests are strictly rejected
+    with HTTP 401 Unauthorized.
+  - Exposes zero PII (customer names, emails, phones, or addresses are not queried).
+
+Query Validation (Zod):
+  - File: `Sinka-backend/validation/dashboard.schema.js`
+  - Accepts: '7d', '14d', '30d' (case-insensitive, default: '7d').
+  - Rejects invalid parameters (e.g. ?range=yearly) with HTTP 400 Bad Request.
+
+Response Format:
+  {
+    "success": true,
+    "message": "Orders analytics retrieved successfully",
+    "data": {
+      "range": "7d",
+      "series": [
+        {
+          "date": "2026-10-31",
+          "total": 0,
+          "pending": 0,
+          "processing": 0,
+          "shipped": 0,
+          "delivered": 0,
+          "cancelled": 0
+        },
+        ...
+        {
+          "date": "2026-11-06",
+          "total": 5,
+          "pending": 1,
+          "processing": 2,
+          "shipped": 1,
+          "delivered": 1,
+          "cancelled": 0
+        }
+      ]
+    }
+  }
+
+--------------------------------------------------------------------------------
+3. MONGODB AGGREGATION PIPELINE (PERFORMANCE OPTIMIZED)
+--------------------------------------------------------------------------------
+File: `Sinka-backend/services/analytics.service.js`
+
+Pipeline Structure:
+1. $match stage:
+   Filters by indexed `createdAt` date range:
+   {
+     createdAt: {
+       $gte: startDate (midnight UTC of first day in range),
+       $lte: endDate (23:59:59.999 UTC of today)
+     }
+   }
+   Leverages existing compound indexes on `createdAt` without loading full order
+   documents or customer subdocuments.
+
+2. $group stage:
+   Groups by formatted date string `YYYY-MM-DD` and tabulates status transitions:
+   {
+     _id: {
+       $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "UTC" }
+     },
+     total: { $sum: 1 },
+     pending: {
+       $sum: { $cond: [{ $eq: ["$status", "PENDING"] }, 1, 0] }
+     },
+     processing: {
+       $sum: { $cond: [{ $in: ["$status", ["ACCEPTED", "PROCESSING", "PACKED"]] }, 1, 0] }
+     },
+     shipped: {
+       $sum: { $cond: [{ $in: ["$status", ["SHIPPED", "OUT_FOR_DELIVERY"]] }, 1, 0] }
+     },
+     delivered: {
+       $sum: { $cond: [{ $eq: ["$status", "DELIVERED"] }, 1, 0] }
+     },
+     cancelled: {
+       $sum: { $cond: [{ $in: ["$status", ["CANCELLED", "REJECTED"]] }, 1, 0] }
+     }
+   }
+
+3. Continuous Timeline Merge:
+   Generates consecutive chronological dates (7, 14, or 30 days) and merges with
+   the aggregation map. Any day with no orders is guaranteed to return 0 values
+   so the chart displays a clean, unbroken timeline without gaps.
+
+--------------------------------------------------------------------------------
+4. FRONTEND SERVICE & UI CHART COMPONENT
+--------------------------------------------------------------------------------
+Frontend Service:
+  - File: `sinka-admin/src/services/dashboard.service.js`
+  - Method: `getOrdersAnalytics(range = '7d')`
+  - Utilizes centralized `apiClient` with automatic Bearer token injection.
+
+Frontend Component:
+  - File: `sinka-admin/src/components/dashboard/OrdersAnalyticsChart.jsx`
+  - Pure React + SVG multi-line chart (zero extra runtime dependencies).
+  - Smooth cubic Bézier spline curves with boundary clamping.
+  - Semantic Sinka brand colors:
+    * Total Orders: `#48250F` (Sinka Brand Primary Brown)
+    * Pending:      `#F59E0B` (Amber / Orange)
+    * Processing:   `#3B82F6` (Blue)
+    * Shipped:      `#8B5CF6` (Purple)
+    * Delivered:    `#10B981` (Emerald Green)
+    * Cancelled:    `#EF4444` (Rose / Red)
+  - Top-Right Filter Pills: `7D`, `14D`, `30D` (triggers live API reload).
+  - Interactive Legend: Admins can toggle individual series visibility on/off.
+  - Interactive Hover: Vertical crosshair guide and floating detail tooltip showing
+    date and exact status breakdown.
+  - States:
+    * Loading Skeleton: Animated SVG pulse shimmer matching chart dimensions.
+    * Empty State: "No order activity for this period." when total orders = 0.
+    * Error State: "Unable to load order analytics." with a "Retry" button.
+
+Dashboard Placement:
+  - File: `sinka-admin/src/pages/dashboard/DashboardPage.jsx`
+  - Embedded prominently immediately below the top Welcome Banner.
+
+--------------------------------------------------------------------------------
+5. FILES CREATED & MODIFIED
+--------------------------------------------------------------------------------
+Backend (`Sinka-backend`):
+  [CREATED] validation/dashboard.schema.js
+  [CREATED] services/analytics.service.js
+  [CREATED] controller/admin/dashboard.controller.js
+  [CREATED] routes/admin/dashboard.routes.js
+  [CREATED] tests/ordersAnalytics.test.js
+  [MODIFIED] routes/admin/index.routes.js (mounted /dashboard router)
+
+Frontend (`sinka-admin`):
+  [CREATED] src/services/dashboard.service.js
+  [CREATED] src/components/dashboard/OrdersAnalyticsChart.jsx
+  [CREATED] tests/dashboardAnalytics.test.js
+  [MODIFIED] src/constants.js (added ORDERS_ANALYTICS_SERIES & RANGES)
+  [MODIFIED] src/pages/dashboard/DashboardPage.jsx (embedded OrdersAnalyticsChart)
+
+--------------------------------------------------------------------------------
+6. TEST SUITE RESULTS
+--------------------------------------------------------------------------------
+Backend Test Suite (node --test):
+  - `tests/ordersAnalytics.test.js`: 10/10 tests PASSED
+  - `tests/order.test.js`: 26/26 tests PASSED
+  Total Backend Tests: 36/36 PASSED (0 failures)
+
+Frontend Test Suite (npm test):
+  - `tests/dashboardAnalytics.test.js`: 6/6 tests PASSED
+  - Total Frontend Tests: 73/73 tests PASSED across 10 test suites (0 failures)
+
+Linter Check (npm run lint):
+  - ESLint completed with 0 errors and 0 warnings.
+
+Production Build (npm run build):
+  - Vite production bundle compiled cleanly in 785ms.
+
+--------------------------------------------------------------------------------
+7. MANUAL TESTING & VERIFICATION STEPS
+--------------------------------------------------------------------------------
+1. Start Admin Frontend:
+   $ npm run dev (or access running Vite server at http://localhost:5174/)
+2. Log in with admin credentials (`sinkahomeliving@gmail.com`).
+3. Navigate to Dashboard (`/dashboard`).
+4. Verify the "Orders Analytics" card renders below the Welcome Banner.
+5. Click between `7D`, `14D`, and `30D` pills:
+   - Observe request made to `GET /api/admin/dashboard/orders-analytics?range=...`.
+   - Observe timeline updates to 7, 14, or 30 days accordingly.
+6. Hover over data nodes:
+   - Verify hover crosshair and tooltip displaying formatted date and counts.
+7. Click legend pills (e.g. "Pending", "Cancelled"):
+   - Verify individual lines toggle on and off smoothly.
+================================================================================
+

@@ -7,7 +7,6 @@ import {
   MapPin,
   CreditCard,
   Truck,
-  History,
   FileText,
   Copy,
   Check,
@@ -29,6 +28,7 @@ import OrderStatusBadge from '../../components/orders/OrderStatusBadge.jsx';
 import PaymentStatusBadge from '../../components/orders/PaymentStatusBadge.jsx';
 import StatusTransitionModal from '../../components/orders/StatusTransitionModal.jsx';
 import CourierTrackingModal from '../../components/orders/CourierTrackingModal.jsx';
+import OrderLifecycleProgress from '../../components/orders/OrderLifecycleProgress.jsx';
 import { getAllowedTransitions, isTerminalStatus, ROUTES } from '../../constants.js';
 import { formatCurrency } from '../../utils/formatCurrency.js';
 
@@ -280,43 +280,18 @@ export function OrderDetailPage() {
         </div>
       )}
 
-      {/* Lifecycle Status Action Bar */}
-      <div className="bg-white rounded-lg border border-stone-200 p-4 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-              Order Lifecycle Stage
-            </h2>
-            <p className="text-xs text-stone-700 mt-0.5">
-              Current Status: <span className="font-semibold text-stone-900">{order.status}</span>
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {terminal ? (
-              <span className="inline-flex items-center text-xs text-stone-500 bg-stone-100 px-3 py-1.5 rounded-md font-medium">
-                Terminal Status (No further transitions permitted)
-              </span>
-            ) : allowedTransitions.length > 0 ? (
-              allowedTransitions.map((nextStatus) => (
-                <Button
-                  key={nextStatus}
-                  variant={getTransitionButtonVariant(nextStatus)}
-                  size="sm"
-                  onClick={() => {
-                    setTargetStatus(nextStatus);
-                    setIsTransitionModalOpen(true);
-                  }}
-                >
-                  {getTransitionLabel(nextStatus)}
-                </Button>
-              ))
-            ) : (
-              <span className="text-xs text-stone-400">No active transitions</span>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Horizontal Order Lifecycle Progress & Status Action Bar */}
+      <OrderLifecycleProgress
+        order={order}
+        allowedTransitions={allowedTransitions}
+        terminal={terminal}
+        onTransitionClick={(nextStatus) => {
+          setTargetStatus(nextStatus);
+          setIsTransitionModalOpen(true);
+        }}
+        getTransitionButtonVariant={getTransitionButtonVariant}
+        getTransitionLabel={getTransitionLabel}
+      />
 
       {/* Main Grid: Customer & Shipping (Left/Top) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -785,99 +760,56 @@ export function OrderDetailPage() {
         </div>
       </div>
 
-      {/* Order History Timeline & Internal Admin Notes */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Status History Timeline (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-lg border border-stone-200 p-5 shadow-xs space-y-4">
-          <div className="flex items-center space-x-2 border-b border-stone-100 pb-3">
-            <History className="w-4 h-4 text-brand-primary" />
-            <h2 className="font-heading font-semibold text-stone-900 text-sm">
-              Order Lifecycle Timeline
-            </h2>
-          </div>
-
-          <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-stone-200">
-            {((order.statusHistory || []).slice().reverse()).map((event, idx) => (
-              <div key={idx} className="relative">
-                {/* Dot */}
-                <div className="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-brand-primary ring-4 ring-white" />
-
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-stone-900">
-                      {event.fromStatus ? `${event.fromStatus} → ${event.toStatus}` : event.toStatus}
-                    </span>
-                    <span className="text-[11px] text-stone-400">
-                      by {event.changedBy || 'System'}
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-stone-500">
-                    {formatDateTime(event.timestamp)}
-                  </p>
-
-                  {event.note && (
-                    <p className="text-xs text-stone-700 bg-stone-50 p-2 rounded-md border border-stone-200/60 mt-1">
-                      {event.note}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Internal Admin Notes */}
+      <div className="bg-white rounded-lg border border-stone-200 p-5 shadow-xs space-y-4">
+        <div className="flex items-center space-x-2 border-b border-stone-100 pb-3">
+          <FileText className="w-4 h-4 text-brand-primary" />
+          <h2 className="font-heading font-semibold text-stone-900 text-sm">
+            Internal Admin Notes
+          </h2>
         </div>
 
-        {/* Administrative Notes (5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-lg border border-stone-200 p-5 shadow-xs space-y-4">
-          <div className="flex items-center space-x-2 border-b border-stone-100 pb-3">
-            <FileText className="w-4 h-4 text-brand-primary" />
-            <h2 className="font-heading font-semibold text-stone-900 text-sm">
-              Internal Admin Notes
-            </h2>
+        {/* Form to Append Note */}
+        <form onSubmit={handleAddAdminNote} className="space-y-2">
+          <textarea
+            rows={2}
+            value={adminNoteText}
+            onChange={(e) => setAdminNoteText(e.target.value)}
+            placeholder="Add an internal note visible only to back-office admins..."
+            className="w-full px-3 py-2 text-xs border border-stone-300 rounded-md shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+            maxLength={2000}
+          />
+          <div className="flex justify-end">
+            <Button
+              type="submit"
+              variant="outline"
+              size="sm"
+              isLoading={isSubmittingNote}
+              disabled={!adminNoteText.trim()}
+              icon={Plus}
+            >
+              Add Note
+            </Button>
           </div>
+        </form>
 
-          {/* Form to Append Note */}
-          <form onSubmit={handleAddAdminNote} className="space-y-2">
-            <textarea
-              rows={2}
-              value={adminNoteText}
-              onChange={(e) => setAdminNoteText(e.target.value)}
-              placeholder="Add an internal note visible only to back-office admins..."
-              className="w-full px-3 py-2 text-xs border border-stone-300 rounded-md shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-              maxLength={2000}
-            />
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                variant="outline"
-                size="sm"
-                isLoading={isSubmittingNote}
-                disabled={!adminNoteText.trim()}
-                icon={Plus}
-              >
-                Add Note
-              </Button>
-            </div>
-          </form>
-
-          {/* Existing Notes List */}
-          <div className="space-y-2.5 max-h-80 overflow-y-auto pt-2 border-t border-stone-100">
-            {(order.adminNotes || []).length === 0 ? (
-              <p className="text-xs text-stone-400 italic text-center py-4">
-                No internal admin notes recorded yet.
-              </p>
-            ) : (
-              (order.adminNotes || []).slice().reverse().map((noteItem, idx) => (
-                <div key={idx} className="p-2.5 bg-stone-50 rounded-md border border-stone-200/60 text-xs space-y-1">
-                  <p className="text-stone-800 leading-relaxed">{noteItem.note}</p>
-                  <div className="flex justify-between text-[10px] text-stone-400 pt-1">
-                    <span>{noteItem.addedBy}</span>
-                    <span>{formatDateTime(noteItem.createdAt)}</span>
-                  </div>
+        {/* Existing Notes List */}
+        <div className="space-y-2.5 max-h-80 overflow-y-auto pt-2 border-t border-stone-100">
+          {(order.adminNotes || []).length === 0 ? (
+            <p className="text-xs text-stone-400 italic text-center py-4">
+              No internal admin notes recorded yet.
+            </p>
+          ) : (
+            (order.adminNotes || []).slice().reverse().map((noteItem, idx) => (
+              <div key={idx} className="p-2.5 bg-stone-50 rounded-md border border-stone-200/60 text-xs space-y-1">
+                <p className="text-stone-800 leading-relaxed">{noteItem.note}</p>
+                <div className="flex justify-between text-[10px] text-stone-400 pt-1">
+                  <span>{noteItem.addedBy}</span>
+                  <span>{formatDateTime(noteItem.createdAt)}</span>
                 </div>
-              ))
-            )}
-          </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

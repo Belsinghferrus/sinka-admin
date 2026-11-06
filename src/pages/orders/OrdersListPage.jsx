@@ -121,21 +121,26 @@ export function OrdersListPage() {
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Top Header */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center space-x-2">
-            <h1 className="text-xl sm:text-2xl font-heading font-semibold text-stone-900 tracking-tight">
-              Order Management
-            </h1>
-            {!isLoading && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 border border-stone-200">
-                {meta.total} {meta.total === 1 ? 'order' : 'orders'}
-              </span>
-            )}
+          <div className="flex items-center space-x-2.5">
+            <span className="p-2 rounded-lg bg-stone-100 text-stone-800">
+              <ShoppingBag className="w-5 h-5 text-brand-primary" />
+            </span>
+            <div className="flex items-center space-x-2">
+              <h1 className="text-xl sm:text-2xl font-heading font-semibold text-stone-900 tracking-tight">
+                Orders
+              </h1>
+              {!isLoading && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 border border-stone-200">
+                  {meta.total} {meta.total === 1 ? 'order' : 'orders'}
+                </span>
+              )}
+            </div>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-stone-500">
-            Track customer orders, manage fulfillment stages, assign courier tracking, and update status workflows.
+            Manage customer orders, fulfilment status, and shipment tracking.
           </p>
         </div>
 

@@ -1,0 +1,152 @@
+================================================================================
+SINKA HOME & LIVING — ADMIN PROFILE CAPSULE & SINGLE LOGOUT REPORT
+================================================================================
+
+Date: 2026-11-06
+Status: Production-Ready & Verified
+Application: Sinka Admin Dashboard (sinka-admin)
+
+================================================================================
+1. EXECUTIVE SUMMARY
+================================================================================
+
+The duplicate logout UI problem has been resolved. The standalone logout button
+previously situated in the bottom-left sidebar footer has been removed. In the
+top-right navigation bar, the admin identity and logout actions were consolidated
+into a compact, SaaS-grade Administrator Profile Capsule with an interactive
+dropdown menu.
+
+Key Results:
+1. Removed the redundant logout button from the sidebar footer while preserving
+   admin identity, status, and role metadata.
+2. Created a dedicated, accessible `AdminProfileCapsule.jsx` in the top-right header.
+3. Implemented a polished dropdown menu displaying administrator identity,
+   verification status, and a single, unified "Sign Out" action.
+4. Maintained 100% adherence to existing Sinka Admin theme tokens, layout dimensions,
+   and authentication mechanisms.
+
+================================================================================
+2. COMPONENTS CHANGED
+================================================================================
+
+1. `src/components/layout/AdminProfileCapsule.jsx` (NEW):
+   - Created a modular profile capsule component with monogram initials avatar.
+   - Encapsulates interactive dropdown states, outside-click listener, and
+     keyboard navigation handlers.
+   - Reuses existing `useAuth().logout` and `useAuth().user` state.
+
+2. `src/components/layout/Header.jsx`:
+   - Removed the inline, unstyled account text and standalone logout icon button.
+   - Integrated `<AdminProfileCapsule />` in the top-right navbar.
+   - Maintained exact `h-16 shrink-0` header dimensions and sticky alignment.
+
+3. `src/components/layout/Sidebar.jsx`:
+   - Removed the duplicate `<button onClick={logout}><LogOut /></button>`.
+   - Removed unused `LogOut` icon and `logout` function imports.
+   - Preserved the admin identity panel in the footer showing admin display name
+     or email and `ShieldCheck` verified role status without leaving an empty
+     or broken layout.
+
+4. `tests/profileCapsule.test.js` (NEW):
+   - Added automated unit tests verifying the elimination of the duplicate sidebar
+     logout action, header capsule integration, monogram generation, responsive
+     rules, and keyboard accessibility attributes.
+
+================================================================================
+3. LOGOUT IMPLEMENTATION REUSED
+================================================================================
+
+- The existing `logout()` method from `useAuth()` (`src/context/AuthProvider.jsx`)
+  was directly reused.
+- `authService.logout()` continues to be invoked, clearing the active 24-hour admin
+  JWT (`sinka_admin_token`) from both in-memory cache and browser localStorage,
+  purging user state, and redirecting unauthenticated traffic to `/login` via
+  `<ProtectedRoute>`.
+- Zero duplicate authentication mechanisms or state stores were created.
+
+================================================================================
+4. UI & DESIGN SYSTEM INTEGRATION
+================================================================================
+
+1. Profile Capsule Trigger:
+   - Compact rounded-full pill design (`rounded-full border border-stone-200/90`).
+   - Sinka brown monogram circle (`bg-brand-primary` #48250F, white text) with
+     dynamic 1-to-2 character uppercase initials computed from display name or email.
+   - Name and "Administrator" label using font-sans and stone neutrals.
+   - Subtle chevron down icon with smooth 180-degree rotation transition when open.
+   - Hover and active states: `hover:bg-stone-50/80 hover:border-stone-300`.
+
+2. Dropdown Menu Panel:
+   - Surface: White card with subtle border (`border-stone-200`) and shadow (`shadow-lg`).
+   - Header: Enlarged avatar, full administrator name, monospaced email, and
+     emerald `ShieldCheck` "Verified Administrator" badge.
+   - Access Section: Displays role badge (`admin`).
+   - Actions Section: Polished "Sign Out" menuitem button with `LogOut` icon,
+     transitioning to subtle red hover styling (`hover:bg-red-50/80 hover:text-red-700`).
+
+3. Sidebar Footer:
+   - Clean, non-interactive administrative identity panel.
+   - Displays admin name/email with `ShieldCheck` and uppercase role badge.
+   - Zero duplicate button, zero layout shifting.
+
+================================================================================
+5. RESPONSIVE BEHAVIOR
+================================================================================
+
+1. Desktop Screens (`sm:` and above):
+   - Capsule shows full avatar monogram, display name/email, "Administrator" label,
+     and animated chevron.
+   - Capsule width is constrained with `max-w-44 truncate` to prevent interference
+     with page breadcrumbs.
+
+2. Mobile & Small Tablet Screens (`< sm`):
+   - Name and role text are gracefully hidden (`hidden sm:flex`).
+   - Monogram avatar and chevron remain visible as a compact pill button.
+   - Prevents navbar overflow on small viewports alongside the hamburger menu and
+     page title.
+
+================================================================================
+6. ACCESSIBILITY IMPROVEMENTS
+================================================================================
+
+- Proper button semantics: Trigger is a native `<button type="button">`.
+- ARIA Attributes:
+  * `aria-expanded={isOpen}` reflects open/close state.
+  * `aria-haspopup="menu"` indicates dropdown menu capability.
+  * `aria-controls="admin-profile-dropdown"` associates trigger with menu panel.
+  * Menu panel includes `role="menu"` and `aria-orientation="vertical"`.
+  * Sign Out button includes `role="menuitem"`.
+- Keyboard Navigation:
+  * Dropdown opens on Enter or Space.
+  * Pressing `Escape` closes the dropdown and returns focus to the capsule trigger.
+- Click-Outside Dismissal:
+  * Native `mousedown` document listener automatically dismisses dropdown on
+    clicks outside the capsule container.
+- Dropdown automatically closes upon clicking Sign Out.
+
+================================================================================
+7. VALIDATION RESULTS
+================================================================================
+
+1. Unit Test Suite (`npm test`):
+   - Command: `node --test tests/**/*.test.js`
+   - Result: 65 tests passed across 9 suites (0 failures).
+   - Validated:
+     * Sidebar footer contains 0 logout buttons or LogOut icons.
+     * Header contains AdminProfileCapsule and 0 standalone buttons.
+     * Accessibility attributes and monogram calculations function properly.
+
+2. Static Analysis / Linter (`npm run lint`):
+   - Command: `eslint .`
+   - Result: 0 errors, 0 warnings.
+
+3. Production Build (`npm run build`):
+   - Command: `vite build`
+   - Result: Production build compiled cleanly in ~770ms (`dist/` generated).
+
+4. Layout Preservation Audit:
+   - Header height: Unchanged at `h-16` (64px).
+   - Sidebar width: Unchanged at `w-64` (256px).
+   - Page layouts and routes: 100% compatible and functional.
+================================================================================
+

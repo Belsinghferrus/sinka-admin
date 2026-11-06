@@ -1,495 +1,160 @@
-import { Link } from 'react-router-dom';
-import { CheckCircle2, ShieldCheck, Layers, Database, Tag, Package, Image as ImageIcon, ShoppingBag, Truck, Plus, ArrowRight } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth.js';
-import { ROUTES } from '../../constants.js';
+import { useState, useEffect, useCallback } from 'react';
+import { AlertCircle, Calendar } from 'lucide-react';
+import dashboardService from '../../services/dashboard.service.js';
+import {
+  DashboardHeader,
+  KpiOverviewCards,
+  OrdersAnalyticsChart,
+  RevenueAnalyticsChart,
+  OrderStatusDistributionChart,
+  TopSellingProducts,
+  CustomerGrowthCard,
+  InventoryAlertsCard,
+  RecentOrdersTable,
+} from '../../components/dashboard/index.js';
 
+/**
+ * Sinka Home & Living Executive Ecommerce Analytics Dashboard.
+ * 100% Backend-driven from real MongoDB collections via GET /api/admin/dashboard/analytics.
+ * Zero dummy data, zero developer/documentation cards.
+ */
 export function DashboardPage() {
-  const { user } = useAuth();
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+  const [period, setPeriod] = useState('7d');
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchAnalytics = useCallback(async (selectedPeriod, isBackground = false) => {
+    if (isBackground) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
+    setError(null);
+
+    try {
+      const response = await dashboardService.getDashboardAnalytics(selectedPeriod);
+      setData(response);
+    } catch {
+      setError('Unable to load dashboard analytics');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAnalytics(period);
+  }, [period, fetchAnalytics]);
+
+  const handleRefresh = () => {
+    fetchAnalytics(period, true);
+  };
+
+  const revenuePeriodTotal =
+    data?.revenue?.current ??
+    data?.revenue?.periodTotal ??
+    data?.kpis?.totalRevenue?.current ??
+    data?.kpis?.periodStats?.revenueInPeriod ??
+    0;
+
+  const revenueAov =
+    data?.revenue?.averageOrderValue?.current ??
+    data?.revenue?.averageOrderValue ??
+    data?.kpis?.averageOrderValue?.current ??
+    0;
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Welcome Banner */}
-      <div className="bg-white rounded-lg border border-stone-200 p-6 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-heading font-semibold text-stone-900">
-            Welcome to Sinka Admin
-          </h2>
-          <p className="mt-1 text-sm text-stone-600 max-w-2xl leading-relaxed">
-            Centralized administrative management workspace for Sinka Home &amp; Living back-office operations.
-          </p>
+      {/* 1. Header with Period Selector & Refresh */}
+      <DashboardHeader
+        period={period}
+        onPeriodChange={setPeriod}
+        onRefresh={handleRefresh}
+        isLoading={isLoading}
+        isRefreshing={isRefreshing}
+      />
+
+      {/* Error Banner */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start justify-between gap-3 text-red-800 text-xs sm:text-sm shadow-xs">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-stone-900">Unable to load dashboard analytics</p>
+              <p className="mt-0.5 text-stone-600">Please check your network connection and try again.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => fetchAnalytics(period)}
+            className="px-3.5 py-1.5 text-xs font-semibold rounded-md bg-brand-primary text-white hover:bg-brand-primary-hover transition-colors shrink-0 shadow-2xs"
+          >
+            Retry
+          </button>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            to={ROUTES.ORDERS}
-            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-brand-primary text-white text-xs font-semibold rounded-md shadow-xs hover:bg-brand-primary/90 transition-colors"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            <span>Orders</span>
-          </Link>
-          <Link
-            to={ROUTES.BANNERS_NEW}
-            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-stone-100 text-stone-700 text-xs font-semibold rounded-md hover:bg-stone-200/80 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Banner</span>
-          </Link>
-          <Link
-            to={ROUTES.BANNERS}
-            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-stone-100 text-stone-700 text-xs font-semibold rounded-md hover:bg-stone-200/80 transition-colors"
-          >
-            <ImageIcon className="w-4 h-4" />
-            <span>Banners</span>
-          </Link>
-          <Link
-            to={ROUTES.PRODUCTS}
-            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-stone-100 text-stone-700 text-xs font-semibold rounded-md hover:bg-stone-200/80 transition-colors"
-          >
-            <Package className="w-4 h-4" />
-            <span>Products</span>
-          </Link>
-          <Link
-            to={ROUTES.OFFERS}
-            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-stone-100 text-stone-700 text-xs font-semibold rounded-md hover:bg-stone-200/80 transition-colors"
-          >
-            <Tag className="w-4 h-4" />
-            <span>Offers</span>
-          </Link>
-        </div>
+      )}
+
+      {/* 2. Responsive KPI Cards Grid */}
+      <KpiOverviewCards kpis={data?.kpis} isLoading={isLoading} />
+
+      {/* 3. Orders Overview + Customer Growth — Side-by-Side Analytics Row */}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)] gap-5">
+        <OrdersAnalyticsChart
+          trend={data?.orders?.trend}
+          range={period}
+          onRangeChange={setPeriod}
+          isLoading={isLoading}
+          error={error}
+        />
+        <CustomerGrowthCard
+          customers={data?.customers}
+          isLoading={isLoading}
+        />
       </div>
 
-      {/* Admin Session & Foundation Status Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Administrator Profile Card */}
-        <div className="bg-white rounded-lg border border-stone-200 p-5 shadow-xs">
-          <div className="flex items-center space-x-2.5 mb-3">
-            <div className="p-2 rounded-md bg-stone-100 text-stone-800">
-              <ShieldCheck className="w-5 h-5 text-brand-primary" />
-            </div>
-            <h3 className="text-base font-heading font-semibold text-stone-900">
-              Administrator Profile
-            </h3>
-          </div>
-          <div className="space-y-2 text-xs text-stone-600">
-            <div className="flex justify-between py-1 border-b border-stone-100">
-              <span className="text-stone-500 font-medium">Account:</span>
-              <span className="font-semibold text-stone-800">{user?.displayName || user?.email || 'Administrator'}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-stone-100">
-              <span className="text-stone-500 font-medium">Email:</span>
-              <span className="font-mono text-stone-800">{user?.email || 'N/A'}</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-stone-100">
-              <span className="text-stone-500 font-medium">Role:</span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                {user?.role || 'admin'}
-              </span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-stone-500 font-medium">Authorization:</span>
-              <span className="text-emerald-700 font-medium">Verified via MongoDB RBAC</span>
-            </div>
-          </div>
-        </div>
+      {/* 4. Revenue Overview & 5. Order Status Distribution (2-Column Grid) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RevenueAnalyticsChart
+          trend={data?.revenue?.trend}
+          periodTotal={revenuePeriodTotal}
+          averageOrderValue={revenueAov}
+          isLoading={isLoading}
+        />
 
-        {/* Backend & API Connectivity */}
-        <div className="bg-white rounded-lg border border-stone-200 p-5 shadow-xs">
-          <div className="flex items-center space-x-2.5 mb-3">
-            <div className="p-2 rounded-md bg-stone-100 text-stone-800">
-              <Database className="w-5 h-5 text-brand-primary" />
-            </div>
-            <h3 className="text-base font-heading font-semibold text-stone-900">
-              Backend Integration
-            </h3>
-          </div>
-          <p className="text-xs text-stone-600 leading-relaxed mb-3">
-            Active REST API endpoint: <code className="font-mono text-stone-800 bg-stone-100 px-1 py-0.5 rounded">{apiBaseUrl}</code>
-          </p>
-          <ul className="space-y-2 text-xs text-stone-600">
-            <li className="flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Admin Authentication (<code className="font-mono">POST /api/admin/auth/login</code>)</span>
-            </li>
-            <li className="flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Admin Session Check (<code className="font-mono">GET /api/admin/auth/me</code>)</span>
-            </li>
-            <li className="flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Product Catalogue &amp; Cloudflare R2 (<code className="font-mono">/api/admin/products/*</code>, <code className="font-mono">/api/admin/upload/*</code>)</span>
-            </li>
-            <li className="flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Promotional Offers CRUD (<code className="font-mono">/api/admin/offers/*</code>)</span>
-            </li>
-            <li className="flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Order Management &amp; Fulfillment (<code className="font-mono">/api/admin/orders/*</code>)</span>
-            </li>
-            <li className="flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Homepage Banners &amp; Reordering (<code className="font-mono">/api/admin/banners/*</code>, <code className="font-mono">/api/admin/upload/banners</code>)</span>
-            </li>
-          </ul>
-        </div>
+        <OrderStatusDistributionChart
+          distribution={data?.orders?.statusDistribution || data?.statusDistribution}
+          isLoading={isLoading}
+        />
       </div>
 
-      {/* Order Management Quick Panel */}
-      <div className="bg-white rounded-lg border border-stone-200 p-5 shadow-xs">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-md bg-stone-100 text-stone-800">
-              <ShoppingBag className="w-5 h-5 text-brand-primary" />
-            </div>
-            <div>
-              <h3 className="text-base font-heading font-semibold text-stone-900">
-                Order Fulfillment &amp; Operations
-              </h3>
-              <p className="text-xs text-stone-500">
-                Track customer orders, manage lifecycle status transitions, assign courier tracking, and inspect financial summaries
-              </p>
-            </div>
-          </div>
-          <Link
-            to={ROUTES.ORDERS}
-            className="text-xs font-semibold text-brand-primary hover:text-brand-primary-hover flex items-center space-x-1"
-          >
-            <span>View All Orders</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+      {/* 6. Top Selling Products & 8. Inventory Alerts (2-Column Grid) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TopSellingProducts
+          products={data?.topProducts}
+          isLoading={isLoading}
+        />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Order Management Table</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                Filter by lifecycle status, payment status, and custom date ranges. Search across order numbers, customer names, emails, and phone numbers.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.ORDERS}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Browse orders</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Courier Tracking &amp; Auto-Ship</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                Assign AWB numbers with auto-generated tracking links for Delhivery, BlueDart, DTDC, IndiaPost, and Shiprocket. Auto-advances early orders to Shipped.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.ORDERS}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Manage logistics</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Lifecycle State Machine</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                Strict transitions from Pending to Accepted, Processing, Packed, Shipped, Out for Delivery, and Delivered. Automatic inventory restoration on cancellation.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.ORDERS}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Inspect workflows</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-        </div>
+        <InventoryAlertsCard
+          products={data?.lowStockProducts}
+          isLoading={isLoading}
+        />
       </div>
 
-      {/* Homepage Banners Quick Management Panel */}
-      <div className="bg-white rounded-lg border border-stone-200 p-5 shadow-xs">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-md bg-stone-100 text-stone-800">
-              <ImageIcon className="w-5 h-5 text-brand-primary" />
-            </div>
-            <div>
-              <h3 className="text-base font-heading font-semibold text-stone-900">
-                Homepage Hero Banners
-              </h3>
-              <p className="text-xs text-stone-500">
-                Curate storefront hero carousel slides, customize typography, and adjust display priorities
-              </p>
-            </div>
-          </div>
-          <Link
-            to={ROUTES.BANNERS}
-            className="text-xs font-semibold text-brand-primary hover:text-brand-primary-hover flex items-center space-x-1"
-          >
-            <span>Manage Banners</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+      {/* 9. Recent Orders Full-Width Section */}
+      <RecentOrdersTable
+        orders={data?.recentOrders}
+        isLoading={isLoading}
+      />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Hero Carousel Curation</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                Create slides with high-res photography, eyebrows, headlines, descriptions, and custom CTAs.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.BANNERS_NEW}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Add hero slide</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Storefront Carousel Preview</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                Inspect how banners look on desktop and mobile viewports with live typography, overlays, and controls.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.BANNERS}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Launch preview</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Display Priority &amp; Reordering</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                Instantly adjust slide sequence with one-click reordering controls synced with backend atomic reorder.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.BANNERS}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Reorder sequence</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Product Management Quick Panel */}
-      <div className="bg-white rounded-lg border border-stone-200 p-5 shadow-xs">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-md bg-stone-100 text-stone-800">
-              <Package className="w-5 h-5 text-brand-primary" />
-            </div>
-            <div>
-              <h3 className="text-base font-heading font-semibold text-stone-900">
-                Product Catalogue Management
-              </h3>
-              <p className="text-xs text-stone-500">
-                Manage handcrafted furniture products, pricing, inventory, and Cloudflare R2 media galleries
-              </p>
-            </div>
-          </div>
-          <Link
-            to={ROUTES.PRODUCTS}
-            className="text-xs font-semibold text-brand-primary hover:text-brand-primary-hover flex items-center space-x-1"
-          >
-            <span>View Catalogue</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Furniture Catalogue</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                Add and edit furniture across 10 canonical categories with comprehensive specs, pricing, and MRP discount displays.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.PRODUCTS_NEW}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Add new product</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Cloudflare R2 Storage</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                High-performance object storage integration. Multi-image uploads (JPEG, PNG, WebP, AVIF up to 8 MB) with drag-and-drop.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.PRODUCTS}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Manage media galleries</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Inventory &amp; Stock Tracking</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                Monitor stock levels, SKUs, and active storefront visibility. Automated low-stock and out-of-stock badges.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.PRODUCTS}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Inspect inventory</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Promotional Offers Quick Management Panel */}
-      <div className="bg-white rounded-lg border border-stone-200 p-5 shadow-xs">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-4">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-md bg-stone-100 text-stone-800">
-              <Tag className="w-5 h-5 text-brand-primary" />
-            </div>
-            <div>
-              <h3 className="text-base font-heading font-semibold text-stone-900">
-                Promotional Offer Management
-              </h3>
-              <p className="text-xs text-stone-500">
-                Manage hero banners and active customer promotional campaigns
-              </p>
-            </div>
-          </div>
-          <Link
-            to={ROUTES.OFFERS}
-            className="text-xs font-semibold text-brand-primary hover:text-brand-primary/80 flex items-center space-x-1"
-          >
-            <span>View All</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Campaign Management</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                Create and schedule seasonal sales banners with custom titles, imagery, and call-to-action buttons.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.OFFERS_NEW}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Create new campaign</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Priority &amp; Scheduling</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                Set priority scores and optional date windows. Backend automatically picks the highest priority active offer.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.OFFERS}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Browse priority list</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-
-          <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 flex flex-col justify-between">
-            <div>
-              <p className="font-semibold text-stone-900">Live Customer Preview</p>
-              <p className="text-stone-500 mt-1 text-[11px] leading-relaxed">
-                Preview the exact banner currently being served to customer storefront visitors via <code className="font-mono">/active</code>.
-              </p>
-            </div>
-            <div className="mt-3">
-              <Link
-                to={ROUTES.OFFERS}
-                className="text-brand-primary font-medium hover:underline inline-flex items-center space-x-1"
-              >
-                <span>Launch preview tool</span>
-                <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Application Architecture Overview */}
-      <div className="bg-white rounded-lg border border-stone-200 p-5 shadow-xs">
-        <div className="flex items-center space-x-2.5 mb-3">
-          <div className="p-2 rounded-md bg-stone-100 text-stone-800">
-            <Layers className="w-5 h-5 text-brand-primary" />
-          </div>
-          <h3 className="text-base font-heading font-semibold text-stone-900">
-            Core Foundation Stack
-          </h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-          <div className="p-3 bg-stone-50 rounded-md border border-stone-100">
-            <p className="font-semibold text-stone-800">React 18 &amp; Vite 6</p>
-            <p className="text-[11px] text-stone-500 mt-0.5">ES Modules &amp; Fast Refresh</p>
-          </div>
-          <div className="p-3 bg-stone-50 rounded-md border border-stone-100">
-            <p className="font-semibold text-stone-800">Tailwind CSS v4</p>
-            <p className="text-[11px] text-stone-500 mt-0.5">Custom Sinka Theme Tokens</p>
-          </div>
-          <div className="p-3 bg-stone-50 rounded-md border border-stone-100">
-            <p className="font-semibold text-stone-800">React Router DOM v7</p>
-            <p className="text-[11px] text-stone-500 mt-0.5">Protected route architecture</p>
-          </div>
-          <div className="p-3 bg-stone-50 rounded-md border border-stone-100">
-            <p className="font-semibold text-stone-800">Axios &amp; 24h JWT Auth</p>
-            <p className="text-[11px] text-stone-500 mt-0.5">Bearer authorization</p>
-          </div>
-        </div>
+      {/* Footer Metadata */}
+      <div className="flex items-center justify-between text-[11px] text-stone-400 border-t border-stone-200/80 pt-3 px-1">
+        <span className="flex items-center space-x-1">
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Active Period Window: {period.toUpperCase()}</span>
+        </span>
+        <span>Sinka Home &amp; Living Business Intelligence Engine</span>
       </div>
     </div>
   );
