@@ -1,5 +1,7 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { offerService } from '../src/services/offer.service.js';
 import {
   MAX_OFFER_IMAGE_SIZE_BYTES,
@@ -191,5 +193,42 @@ describe('Promotional Offer Service & Image Upload Tests', () => {
     assert.equal(capturedBody.imageUrl, 'https://pub-r2.dev/offers/new-banner.webp');
     assert.equal(capturedBody.imageKey, 'offers/new-banner.webp');
     assert.equal(updated.title, 'Updated Festival Sale');
+  });
+
+  test('OfferFormPage implements compact two-column promotional workspace with sticky live storefront preview', () => {
+    const offerFormPath = path.resolve('src/pages/offers/OfferFormPage.jsx');
+    const content = fs.readFileSync(offerFormPath, 'utf8');
+
+    // 1. Two-column responsive grid workspace: Left (~70-75%), Right (~25-30%)
+    assert.match(content, /grid-cols-1\s+lg:grid-cols-\[minmax\(0,1fr\)_340px\]\s+xl:grid-cols-\[minmax\(0,1fr\)_360px\]/);
+
+    // 2. Right sidebar is sticky on desktop
+    assert.match(content, /lg:sticky\s+lg:top-4/);
+
+    // 3. Compact section cards for Campaign Details, Media & Call to Action, Scheduling & Priority
+    assert.match(content, /Campaign Details/);
+    assert.match(content, /Media &amp; Call to Action/);
+    assert.match(content, /Scheduling &amp; Priority/);
+
+    // 4. Compact storefront live preview with Special Offer badge, title, subtitle, and CTA button
+    assert.match(content, /Storefront Preview/);
+    assert.match(content, /Special Offer/);
+
+    // 5. Publication Settings card with Active Status toggle
+    assert.match(content, /Publication Settings/);
+    assert.match(content, /Active Status/);
+
+    // 6. Action buttons in desktop sidebar and mobile bottom bar
+    assert.match(content, /Publish Offer/);
+  });
+
+  test('OfferImageUploader implements compact dropzone styling', () => {
+    const uploaderPath = path.resolve('src/components/offers/OfferImageUploader.jsx');
+    const content = fs.readFileSync(uploaderPath, 'utf8');
+
+    // Compact dropzone padding and icon sizing
+    assert.match(content, /p-5/);
+    assert.match(content, /w-10\s+h-10/);
+    assert.match(content, /Supports JPG, JPEG, PNG, and WebP \(up to 5 MB\)/);
   });
 });

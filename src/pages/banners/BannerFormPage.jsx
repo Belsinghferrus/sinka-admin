@@ -6,23 +6,27 @@ import {
   Save,
   AlertCircle,
   Eye,
-  Calendar,
   Layers,
-  Sparkles,
   Link as LinkIcon,
   CheckCircle2,
   Clock,
   Loader2,
   Type,
-  ToggleLeft,
-  ToggleRight,
   Info,
+  Monitor,
+  Smartphone,
+  FileImage,
+  ChevronLeft,
+  ChevronRight,
+  Percent,
+  ShieldCheck,
+  Truck,
+  CreditCard,
 } from 'lucide-react';
 import bannerService from '../../services/banner.service.js';
 import Button from '../../components/ui/Button.jsx';
 import LoadingIndicator from '../../components/ui/LoadingIndicator.jsx';
 import { BannerImageUploader } from '../../components/banners/BannerImageUploader.jsx';
-import { BannerHeroPreview } from '../../components/banners/BannerHeroPreview.jsx';
 import { ROUTES } from '../../constants.js';
 
 /**
@@ -33,20 +37,322 @@ function toDatetimeLocalValue(dateVal) {
   const d = new Date(dateVal);
   if (isNaN(d.getTime())) return '';
   const pad = (n) => String(n).padStart(2, '0');
-  const year = d.getFullYear();
-  const month = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const hours = pad(d.getHours());
-  const minutes = pad(d.getMinutes());
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** Reusable accessible toggle switch. */
+function ToggleSwitch({ checked, onChange, label, size = 'md' }) {
+  const isLg = size === 'lg';
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-1 ${
+        isLg ? 'h-6 w-11' : 'h-5 w-9'
+      } ${checked ? 'bg-brand-primary' : 'bg-stone-300'}`}
+    >
+      <span className="sr-only">{label}</span>
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none inline-block transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+          isLg ? 'h-5 w-5' : 'h-4 w-4'
+        } ${checked ? (isLg ? 'translate-x-5' : 'translate-x-4') : 'translate-x-0'}`}
+      />
+    </button>
+  );
+}
+
+/** Compact card section with titled header. */
+function SectionCard({ title, icon: Icon, children }) {
+  return (
+    <div className="bg-white rounded-xl border border-stone-200 shadow-xs overflow-hidden">
+      <div className="flex items-center space-x-2 px-4 py-3 border-b border-stone-100 bg-stone-50/60">
+        {Icon && (
+          <span className="p-1 rounded-md bg-stone-100 text-brand-primary shrink-0">
+            <Icon className="w-3.5 h-3.5" />
+          </span>
+        )}
+        <h3 className="text-xs font-semibold text-stone-800 uppercase tracking-wide">{title}</h3>
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
+/** Toggle + collapsible input row for content elements. */
+function ContentToggleRow({ label, description, checked, onToggle, children, error }) {
+  return (
+    <div className={`rounded-lg border transition-colors ${
+      checked ? 'bg-amber-50/40 border-amber-200' : 'bg-stone-50/50 border-stone-200'
+    }`}>
+      <div className="flex items-center justify-between px-3 py-2.5">
+        <div className="min-w-0 pr-3">
+          <span className="text-xs font-semibold text-stone-900 block">{label}</span>
+          {description && (
+            <span className="text-[11px] text-stone-500 block mt-0.5 leading-snug">{description}</span>
+          )}
+        </div>
+        <ToggleSwitch checked={checked} onChange={onToggle} label={`Toggle ${label}`} />
+      </div>
+      {checked && children && (
+        <div className="px-3 pb-3 pt-1 border-t border-amber-200/50 animate-in fade-in duration-150">
+          {children}
+          {error && (
+            <p className="mt-1.5 text-xs text-red-600 flex items-center space-x-1">
+              <AlertCircle className="w-3 h-3 shrink-0" />
+              <span>{error}</span>
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Compact storefront banner preview card — right column.
+ * Proportional preview (aspect-video for desktop, phone frame for mobile).
+ * Updates live as form state changes.
+ */
+function CompactBannerPreview({
+  image, altText,
+  showTextOverlay, showEyebrow, eyebrow,
+  showTitle, title, showSubtitle, subtitle,
+  showCta, ctaText, ctaLink,
+  isActive, sortOrder,
+}) {
+  const [viewportMode, setViewportMode] = useState('desktop');
+  const [imgError, setImgError] = useState(false);
+  const [prevImg, setPrevImg] = useState(image);
+
+  if (image !== prevImg) { setPrevImg(image); setImgError(false); }
+
+  const ae = showTextOverlay && showEyebrow   && eyebrow?.trim()   ? eyebrow.trim()   : '';
+  const at = showTextOverlay && showTitle     && title?.trim()     ? title.trim()     : '';
+  const as_ = showTextOverlay && showSubtitle && subtitle?.trim()  ? subtitle.trim()  : '';
+  const ac = showTextOverlay && showCta       && ctaText?.trim()   ? ctaText.trim()   : '';
+  const al = showTextOverlay && showCta       && ctaLink?.trim()   ? ctaLink.trim()   : '';
+  const hasText = Boolean(ae || at || as_ || ac);
+
+  return (
+    <div className="bg-white rounded-xl border border-stone-200 shadow-xs overflow-hidden font-sans">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-stone-100 bg-stone-50/60">
+        <div className="flex items-center space-x-2">
+          <span className="p-1 rounded-md bg-stone-100 shrink-0">
+            <Eye className="w-3.5 h-3.5 text-brand-primary" />
+          </span>
+          <div>
+            <div className="flex items-center space-x-1.5">
+              <span className="text-xs font-semibold text-stone-800 uppercase tracking-wide">Live Preview</span>
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+            <p className="text-[10px] text-stone-400 leading-none mt-0.5">
+              {viewportMode === 'desktop' ? 'Desktop viewport' : 'Mobile viewport'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-1.5">
+          <span className={`inline-flex items-center space-x-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+            isActive
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              : 'bg-stone-100 text-stone-500 border border-stone-200'
+          }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-stone-400'}`} />
+            <span>{isActive ? 'Active' : 'Draft'}</span>
+          </span>
+          <span className="text-[10px] font-mono font-semibold text-stone-500 bg-stone-100 border border-stone-200 px-1.5 py-0.5 rounded">
+            #{sortOrder}
+          </span>
+
+          {/* Viewport switcher */}
+          <div className="inline-flex rounded-lg border border-stone-200 bg-white p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewportMode('desktop')}
+              className={`px-2 py-1 text-[11px] font-medium rounded-md inline-flex items-center space-x-1 transition-colors ${
+                viewportMode === 'desktop'
+                  ? 'bg-stone-900 text-white shadow-xs'
+                  : 'text-stone-500 hover:text-stone-900'
+              }`}
+              title="Desktop preview"
+            >
+              <Monitor className="w-3 h-3" />
+              <span className="hidden sm:inline">Desktop</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewportMode('mobile')}
+              className={`px-2 py-1 text-[11px] font-medium rounded-md inline-flex items-center space-x-1 transition-colors ${
+                viewportMode === 'mobile'
+                  ? 'bg-stone-900 text-white shadow-xs'
+                  : 'text-stone-500 hover:text-stone-900'
+              }`}
+              title="Mobile preview"
+            >
+              <Smartphone className="w-3 h-3" />
+              <span className="hidden sm:inline">Mobile</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Canvas */}
+      <div className={`w-full flex items-center justify-center transition-all duration-300 ${
+        viewportMode === 'mobile' ? 'bg-stone-200/70 p-5' : 'bg-stone-100 p-0'
+      }`}>
+        <div className={`relative overflow-hidden select-none transition-all duration-300 ${
+          viewportMode === 'mobile'
+            ? 'w-[200px] h-[320px] rounded-2xl shadow-xl border-4 border-stone-700'
+            : 'w-full aspect-video'
+        }`}>
+          {image && !imgError ? (
+            <img
+              src={image}
+              alt={altText || at || 'Banner preview'}
+              className="w-full h-full object-cover object-center"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-stone-800 text-stone-500 p-4 text-center">
+              <FileImage className="w-7 h-7 mb-2 opacity-50" />
+              <span className="text-[11px] font-medium text-stone-400">
+                {image && imgError ? 'Unable to load image' : 'Upload an image to preview'}
+              </span>
+            </div>
+          )}
+
+          {/* Gradient scrim */}
+          {hasText && (
+            <div
+              className={`absolute inset-0 pointer-events-none z-10 ${
+                viewportMode === 'mobile'
+                  ? 'bg-gradient-to-t from-stone-950/90 via-stone-950/50 to-transparent'
+                  : 'bg-gradient-to-r from-stone-950/80 via-stone-950/35 to-transparent'
+              }`}
+              aria-hidden="true"
+            />
+          )}
+
+          {/* Text content */}
+          {hasText && (
+            <div className={`absolute inset-0 z-20 pointer-events-none flex ${
+              viewportMode === 'mobile'
+                ? 'items-end justify-start px-4 pb-9 pt-4'
+                : 'items-center justify-start px-5 py-4'
+            }`}>
+              <div className="text-left max-w-full">
+                {ae && (
+                  <div className="inline-flex items-center gap-1 mb-1">
+                    <span className="w-3 h-0.5 bg-red-400 rounded-full" aria-hidden="true" />
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-stone-200">{ae}</span>
+                  </div>
+                )}
+                {at && (
+                  <h2 className={`font-bold font-heading text-white leading-tight mb-1 drop-shadow-sm line-clamp-2 ${
+                    viewportMode === 'mobile' ? 'text-sm' : 'text-base'
+                  }`}>{at}</h2>
+                )}
+                {as_ && (
+                  <p className={`text-stone-200/90 leading-snug mb-2 line-clamp-2 ${
+                    viewportMode === 'mobile' ? 'text-[9px]' : 'text-[10px]'
+                  }`}>{as_}</p>
+                )}
+                {ac && (
+                  <div className="inline-flex items-center px-3 py-1 text-[10px] font-semibold text-white bg-brand-primary rounded shadow-sm">
+                    {ac}
+                  </div>
+                )}
+                {al && ac && (
+                  <span className="block text-[9px] text-stone-300/70 font-mono mt-1 truncate max-w-[180px]">
+                    → {al}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Chrome: arrows */}
+          <div className="absolute left-2 top-1/2 -translate-y-1/2 z-30 w-5 h-5 rounded-full bg-white/70 flex items-center justify-center opacity-70 pointer-events-none" aria-hidden="true">
+            <ChevronLeft className="w-3 h-3 text-stone-800" />
+          </div>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-5 h-5 rounded-full bg-white/70 flex items-center justify-center opacity-70 pointer-events-none" aria-hidden="true">
+            <ChevronRight className="w-3 h-3 text-stone-800" />
+          </div>
+
+          {/* Slide dots */}
+          <div className="absolute bottom-2 inset-x-0 z-30 flex justify-center pointer-events-none" aria-hidden="true">
+            <div className="flex items-center space-x-1 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
+              <span className="w-4 h-1 rounded-full bg-red-400" />
+              <span className="w-1 h-1 rounded-full bg-white/40" />
+              <span className="w-1 h-1 rounded-full bg-white/40" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Trust bar (desktop viewport only) */}
+      {viewportMode === 'desktop' && (
+        <div className="border-t border-stone-100 bg-stone-50 py-2 px-3">
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
+            <div className="flex items-center space-x-1.5">
+              <div className="w-4 h-4 rounded-full bg-red-100 text-brand-secondary flex items-center justify-center shrink-0">
+                <Percent className="w-2.5 h-2.5" />
+              </div>
+              <span className="font-medium text-stone-700 truncate">Instant Savings</span>
+            </div>
+            <div className="flex items-center space-x-1.5">
+              <div className="w-4 h-4 rounded-full bg-amber-100 text-amber-900 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-2.5 h-2.5" />
+              </div>
+              <span className="font-medium text-stone-700 truncate">100% Solid Hardwood</span>
+            </div>
+            <div className="flex items-center space-x-1.5">
+              <div className="w-4 h-4 rounded-full bg-stone-200 text-stone-700 flex items-center justify-center shrink-0">
+                <Truck className="w-2.5 h-2.5" />
+              </div>
+              <span className="font-medium text-stone-700 truncate">Free Delivery</span>
+            </div>
+            <div className="flex items-center space-x-1.5">
+              <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                <CreditCard className="w-2.5 h-2.5" />
+              </div>
+              <span className="font-medium text-stone-700 truncate">No-Cost EMI</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer note */}
+      <div className="px-4 py-2 border-t border-stone-100">
+        <p className="text-[10px] text-stone-400 text-center leading-relaxed">
+          Updates live as you configure. Actual rendering may vary by device.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Sinka Admin — Create / Edit Homepage Banner
+ *
+ * Two-column professional CMS workspace:
+ *   Left (~65%):  Banner configuration — Artwork, Text Overlay, Carousel Settings
+ *   Right (~35%): Compact sticky live preview + configuration summary
+ *
+ * All existing backend integration, API calls, validation, upload functionality,
+ * scheduling, ordering logic, and business rules are preserved unchanged.
+ */
 export function BannerFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = Boolean(id);
 
-  // Form Field State
+  // ── Form State ──────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
     image: '',
     imageKey: null,
@@ -62,185 +368,132 @@ export function BannerFormPage() {
     endDate: '',
   });
 
-  // Independent Content Visibility Toggles (Default: all text OFF)
   const [showTextOverlay, setShowTextOverlay] = useState(false);
-  const [showEyebrow, setShowEyebrow] = useState(false);
-  const [showTitle, setShowTitle] = useState(false);
-  const [showSubtitle, setShowSubtitle] = useState(false);
-  const [showCta, setShowCta] = useState(false);
+  const [showEyebrow, setShowEyebrow]         = useState(false);
+  const [showTitle, setShowTitle]             = useState(false);
+  const [showSubtitle, setShowSubtitle]       = useState(false);
+  const [showCta, setShowCta]                 = useState(false);
 
-  const [isLoading, setIsLoading] = useState(isEditing);
+  const [isLoading, setIsLoading]     = useState(isEditing);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError]             = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // Load existing banner data if editing
+  // ── Load banner when editing ─────────────────────────────────────────────────
   useEffect(() => {
     if (!isEditing) return;
-
     let isMounted = true;
+
     async function loadBanner() {
       setIsLoading(true);
       setError(null);
       try {
         const banner = await bannerService.getBannerById(id);
-        if (!banner) {
-          throw new Error('Homepage banner not found.');
-        }
+        if (!banner) throw new Error('Homepage banner not found.');
         if (isMounted) {
-          // Derive sensible toggle states from saved content
-          const hasEyebrow = Boolean(banner.eyebrow && banner.eyebrow.trim());
-          const hasTitle = Boolean(banner.title && banner.title.trim());
-          const hasSubtitle = Boolean(banner.subtitle && banner.subtitle.trim());
-          const hasCta = Boolean(banner.ctaText && banner.ctaText.trim());
-          const hasAnyText = hasEyebrow || hasTitle || hasSubtitle || hasCta;
+          const hasEyebrow  = Boolean(banner.eyebrow?.trim());
+          const hasTitle    = Boolean(banner.title?.trim());
+          const hasSubtitle = Boolean(banner.subtitle?.trim());
+          const hasCta      = Boolean(banner.ctaText?.trim());
 
           setFormData({
-            image: banner.image || '',
-            imageKey: banner.imageKey || null,
-            altText: banner.altText || '',
-            eyebrow: banner.eyebrow || '',
-            title: banner.title || '',
-            subtitle: banner.subtitle || '',
-            ctaText: banner.ctaText || 'Shop Collection',
-            ctaLink: banner.ctaLink || '/shop',
+            image:     banner.image     || '',
+            imageKey:  banner.imageKey  || null,
+            altText:   banner.altText   || '',
+            eyebrow:   banner.eyebrow   || '',
+            title:     banner.title     || '',
+            subtitle:  banner.subtitle  || '',
+            ctaText:   banner.ctaText   || 'Shop Collection',
+            ctaLink:   banner.ctaLink   || '/shop',
             sortOrder: banner.sortOrder ?? 0,
-            isActive: Boolean(banner.isActive),
+            isActive:  Boolean(banner.isActive),
             startDate: toDatetimeLocalValue(banner.startDate),
-            endDate: toDatetimeLocalValue(banner.endDate),
+            endDate:   toDatetimeLocalValue(banner.endDate),
           });
 
-          // Restore saved toggle states
-          setShowTextOverlay(hasAnyText);
+          setShowTextOverlay(hasEyebrow || hasTitle || hasSubtitle || hasCta);
           setShowEyebrow(hasEyebrow);
           setShowTitle(hasTitle);
           setShowSubtitle(hasSubtitle);
           setShowCta(hasCta);
         }
       } catch (err) {
-        if (isMounted) {
-          setError(err.message || 'Failed to load banner details.');
-        }
+        if (isMounted) setError(err.message || 'Failed to load banner details.');
       } finally {
         if (isMounted) setIsLoading(false);
       }
     }
 
     loadBanner();
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [id, isEditing]);
 
-  // Form field change handler
+  // ── Handlers ─────────────────────────────────────────────────────────────────
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-
+    setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     if (fieldErrors[name]) {
-      setFieldErrors((prev) => {
-        const copy = { ...prev };
-        delete copy[name];
-        return copy;
-      });
+      setFieldErrors((prev) => { const c = { ...prev }; delete c[name]; return c; });
     }
   };
 
-  // Dedicated image uploader callback
   const handleImageUploaded = ({ url, key }) => {
     setFormData((prev) => ({
       ...prev,
-      image: url || '',
-      imageKey: key || null,
-      altText: prev.altText || prev.title || '',
+      image:    url  || '',
+      imageKey: key  || null,
+      altText:  prev.altText || prev.title || '',
     }));
-
     if (fieldErrors.image) {
-      setFieldErrors((prev) => {
-        const copy = { ...prev };
-        delete copy.image;
-        return copy;
-      });
+      setFieldErrors((prev) => { const c = { ...prev }; delete c.image; return c; });
     }
   };
 
-  // Master Toggle Change Handler
   const handleMasterOverlayToggle = (enable) => {
     setShowTextOverlay(enable);
     if (!enable) {
-      // Clear field errors for text fields when overlay is turned off
       setFieldErrors((prev) => {
-        const copy = { ...prev };
-        delete copy.title;
-        delete copy.subtitle;
-        delete copy.eyebrow;
-        delete copy.ctaText;
-        delete copy.ctaLink;
-        return copy;
+        const c = { ...prev };
+        ['title','subtitle','eyebrow','ctaText','ctaLink'].forEach((k) => delete c[k]);
+        return c;
       });
     }
   };
 
-  // Client-side validation
+  // ── Validation ───────────────────────────────────────────────────────────────
   const validate = () => {
     const errors = {};
 
-    // 1. Mandatory Banner Image
     if (!formData.image || !formData.imageKey) {
       errors.image = 'A hero banner image is required. Please upload an image.';
     }
 
-    // 2. Validate Text Fields ONLY when Text Overlay is enabled
     if (showTextOverlay) {
-      // Headline validation (only when headline toggle is enabled)
       if (showTitle) {
-        const trimmedTitle = formData.title.trim();
-        if (!trimmedTitle) {
-          errors.title = 'Banner headline is required when headline toggle is ON.';
-        } else if (trimmedTitle.length < 2) {
-          errors.title = 'Banner headline must be at least 2 characters.';
-        } else if (trimmedTitle.length > 150) {
-          errors.title = 'Banner headline cannot exceed 150 characters.';
-        }
+        const t = formData.title.trim();
+        if (!t)         errors.title = 'Banner headline is required when headline toggle is ON.';
+        else if (t.length < 2)   errors.title = 'Banner headline must be at least 2 characters.';
+        else if (t.length > 150) errors.title = 'Banner headline cannot exceed 150 characters.';
       }
-
-      // Eyebrow validation (only when eyebrow toggle is enabled)
       if (showEyebrow && formData.eyebrow && formData.eyebrow.length > 100) {
         errors.eyebrow = 'Eyebrow cannot exceed 100 characters.';
       }
-
-      // Subtitle validation (only when subtitle toggle is enabled)
       if (showSubtitle && formData.subtitle && formData.subtitle.length > 300) {
         errors.subtitle = 'Subtitle cannot exceed 300 characters.';
       }
-
-      // CTA validation (only when CTA toggle is enabled)
       if (showCta) {
-        if (!formData.ctaText || !formData.ctaText.trim()) {
-          errors.ctaText = 'CTA button text is required when CTA toggle is ON.';
-        } else if (formData.ctaText.length > 50) {
-          errors.ctaText = 'CTA button text cannot exceed 50 characters.';
-        }
-
-        if (formData.ctaLink && formData.ctaLink.length > 500) {
-          errors.ctaLink = 'CTA destination URL cannot exceed 500 characters.';
-        }
+        if (!formData.ctaText?.trim()) errors.ctaText = 'CTA button text is required when CTA toggle is ON.';
+        else if (formData.ctaText.length > 50) errors.ctaText = 'CTA button text cannot exceed 50 characters.';
+        if (formData.ctaLink && formData.ctaLink.length > 500) errors.ctaLink = 'CTA destination URL cannot exceed 500 characters.';
       }
     }
 
-    // 3. Display Order Validation
     if (formData.sortOrder === '' || isNaN(Number(formData.sortOrder)) || Number(formData.sortOrder) < 0) {
       errors.sortOrder = 'Sort order must be a non-negative number (0, 1, 2...).';
     }
 
-    // 4. Scheduling Window Validation
     if (formData.startDate && formData.endDate) {
-      const start = new Date(formData.startDate);
-      const end = new Date(formData.endDate);
-      if (end < start) {
+      if (new Date(formData.endDate) < new Date(formData.startDate)) {
         errors.endDate = 'End date cannot be earlier than start date.';
       }
     }
@@ -248,7 +501,7 @@ export function BannerFormPage() {
     return errors;
   };
 
-  // Form submission handler
+  // ── Submit ────────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errors = validate();
@@ -261,30 +514,27 @@ export function BannerFormPage() {
     setIsSubmitting(true);
     setError(null);
 
-    // Build payload ensuring disabled fields are never submitted with stale values
-    const effectiveEyebrow = showTextOverlay && showEyebrow && formData.eyebrow ? formData.eyebrow.trim() : '';
-    const effectiveTitle = showTextOverlay && showTitle && formData.title ? formData.title.trim() : '';
-    const effectiveSubtitle = showTextOverlay && showSubtitle && formData.subtitle ? formData.subtitle.trim() : '';
-    const effectiveCtaText = showTextOverlay && showCta && formData.ctaText ? formData.ctaText.trim() : '';
-    const effectiveCtaLink = showTextOverlay && showCta && formData.ctaLink ? formData.ctaLink.trim() : '';
-
-    const effectiveAltText = formData.altText
-      ? formData.altText.trim()
-      : effectiveTitle || 'Promotional Banner';
+    const eff = (cond, val) => (cond && val ? val.trim() : '');
+    const effectiveEyebrow  = eff(showTextOverlay && showEyebrow,  formData.eyebrow);
+    const effectiveTitle    = eff(showTextOverlay && showTitle,    formData.title);
+    const effectiveSubtitle = eff(showTextOverlay && showSubtitle, formData.subtitle);
+    const effectiveCtaText  = eff(showTextOverlay && showCta,      formData.ctaText);
+    const effectiveCtaLink  = eff(showTextOverlay && showCta,      formData.ctaLink);
+    const effectiveAltText  = formData.altText?.trim() || effectiveTitle || 'Promotional Banner';
 
     const payload = {
-      image: formData.image.trim(),
-      imageKey: formData.imageKey.trim(),
-      altText: effectiveAltText,
-      eyebrow: effectiveEyebrow,
-      title: effectiveTitle,
-      subtitle: effectiveSubtitle,
-      ctaText: effectiveCtaText,
-      ctaLink: effectiveCtaLink,
+      image:     formData.image.trim(),
+      imageKey:  formData.imageKey.trim(),
+      altText:   effectiveAltText,
+      eyebrow:   effectiveEyebrow,
+      title:     effectiveTitle,
+      subtitle:  effectiveSubtitle,
+      ctaText:   effectiveCtaText,
+      ctaLink:   effectiveCtaLink,
       sortOrder: Number(formData.sortOrder) || 0,
-      isActive: Boolean(formData.isActive),
+      isActive:  Boolean(formData.isActive),
       startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
-      endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
+      endDate:   formData.endDate   ? new Date(formData.endDate).toISOString()   : null,
     };
 
     try {
@@ -306,6 +556,7 @@ export function BannerFormPage() {
     }
   };
 
+  // ── Loading ───────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="py-24 flex items-center justify-center">
@@ -314,395 +565,180 @@ export function BannerFormPage() {
     );
   }
 
+  // ── Shared publish button props ───────────────────────────────────────────────
+  const publishBtn = (
+    <>
+      {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+      <span>{isSubmitting ? 'Saving...' : isEditing ? 'Update Banner' : 'Publish Banner'}</span>
+    </>
+  );
+
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-stone-200">
-        <div className="flex items-center space-x-3">
+    <div className="space-y-5 font-sans">
+
+      {/* ── Page Header ──────────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-4 border-b border-stone-200">
+        <div className="flex items-start space-x-3">
           <Link
             to={ROUTES.BANNERS}
-            className="p-2 text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
+            className="mt-0.5 p-1.5 text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition-colors shrink-0"
             title="Back to Banners"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <div className="flex items-center space-x-2">
-              <span className="p-1.5 rounded-md bg-stone-100 text-brand-primary">
-                <ImageIcon className="w-4 h-4" />
+            <div className="flex items-center space-x-1.5 mb-0.5">
+              <Link
+                to={ROUTES.BANNERS}
+                className="text-[11px] text-stone-400 hover:text-brand-primary transition-colors"
+              >
+                Banners
+              </Link>
+              <span className="text-[11px] text-stone-300">/</span>
+              <span className="text-[11px] text-stone-500">
+                {isEditing ? 'Edit Banner' : 'New Banner'}
               </span>
-              <h1 className="text-xl sm:text-2xl font-heading font-semibold text-stone-900 tracking-tight">
-                {isEditing ? 'Edit Homepage Banner' : 'Create Homepage Banner'}
-              </h1>
             </div>
+            <h1 className="text-lg font-heading font-semibold text-stone-900 tracking-tight leading-tight">
+              {isEditing ? 'Edit Homepage Banner' : 'Create Homepage Banner'}
+            </h1>
             <p className="mt-0.5 text-xs text-stone-500">
               {isEditing
-                ? 'Adjust artwork, configure optional text overlay, destination link, and scheduling.'
-                : 'Publish a new full-bleed or narrative hero slide to the customer storefront carousel.'}
+                ? 'Update artwork, text overlay, scheduling and visibility settings.'
+                : 'Configure and publish a new hero slide for the Sinka storefront carousel.'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 shrink-0">
           <Link to={ROUTES.BANNERS}>
-            <Button variant="secondary" size="md">
-              Cancel
-            </Button>
+            <Button variant="secondary" size="sm">Cancel</Button>
           </Link>
           <Button
             type="submit"
             form="banner-form"
             variant="primary"
-            size="md"
+            size="sm"
             disabled={isSubmitting}
-            className="inline-flex items-center space-x-2 shadow-xs cursor-pointer"
+            className="inline-flex items-center space-x-1.5 shadow-xs"
           >
-            {isSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            <span>{isSubmitting ? 'Saving...' : isEditing ? 'Update Banner' : 'Publish Banner'}</span>
+            {publishBtn}
           </Button>
         </div>
       </div>
 
-      {/* Error alert */}
+      {/* ── Global Error ─────────────────────────────────────────────────────── */}
       {error && (
-        <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm flex items-start space-x-2 animate-in fade-in duration-150">
-          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
-          <div className="flex-1">
-            <p className="font-medium">Could not save banner</p>
+        <div className="p-3.5 rounded-lg bg-red-50 border border-red-200 text-red-800 flex items-start space-x-2 animate-in fade-in duration-150">
+          <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Could not save banner</p>
             <p className="text-xs text-red-700 mt-0.5">{error}</p>
           </div>
         </div>
       )}
 
-      {/* SECTION 1: PROMINENT FULL-WIDTH STOREFRONT HERO PREVIEW */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center space-x-2">
-            <Eye className="w-4 h-4 text-brand-primary" />
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-stone-700">
-              Live Storefront Hero Carousel Preview
-            </h2>
-          </div>
-          <span className="text-[11px] text-stone-400">
-            {showTextOverlay
-              ? 'Previewing banner with custom text overlay & CTA button'
-              : 'Previewing pure image-only banner (no text overlay)'}
-          </span>
-        </div>
-
-        <BannerHeroPreview
-          image={formData.image}
-          altText={formData.altText}
-          showTextOverlay={showTextOverlay}
-          showEyebrow={showEyebrow}
-          eyebrow={formData.eyebrow}
-          showTitle={showTitle}
-          title={formData.title}
-          showSubtitle={showSubtitle}
-          subtitle={formData.subtitle}
-          showCta={showCta}
-          ctaText={formData.ctaText}
-          ctaLink={formData.ctaLink}
-          isActive={formData.isActive}
-          sortOrder={Number(formData.sortOrder) || 0}
-          showChrome={true}
-          allowViewportToggle={true}
-        />
-      </div>
-
-      {/* SECTION 2: STRUCTURED FORM CONTROLS */}
+      {/* ── Two-Column Workspace ─────────────────────────────────────────────── */}
       <form
         id="banner-form"
         onSubmit={handleSubmit}
-        className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start"
         noValidate
+        className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)] gap-5 items-start"
       >
-        {/* Left Column (5 Cols on LG): Artwork & Settings */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Card 1: Artwork Upload (Mandatory) */}
-          <div className="bg-white rounded-xl border border-stone-200 p-5 shadow-xs space-y-4">
-            <div className="flex items-center space-x-2 pb-3 border-b border-stone-100">
-              <span className="p-1 rounded bg-stone-100 text-brand-primary">
-                <ImageIcon className="w-4 h-4" />
-              </span>
-              <h3 className="text-xs font-semibold text-stone-900 uppercase tracking-wider">
-                1. Banner Artwork (Required)
-              </h3>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                Artwork File <span className="text-red-500">*</span>
-              </label>
-              <BannerImageUploader
-                value={formData.image}
-                imageKey={formData.imageKey}
-                onChange={handleImageUploaded}
-                disabled={isSubmitting}
-                error={fieldErrors.image}
-              />
-            </div>
+        {/* ══════════════════════════════════════════════════════════════════════
+            LEFT COLUMN — Configuration
+            ══════════════════════════════════════════════════════════════════════ */}
+        <div className="space-y-4">
 
-            {/* Alt text for accessibility */}
-            <div>
-              <label
-                htmlFor="altText"
-                className="block text-xs font-semibold text-stone-700 mb-1.5"
-              >
-                Image Alt Text <span className="text-stone-400 font-normal">(Accessibility & SEO)</span>
-              </label>
-              <input
-                type="text"
-                id="altText"
-                name="altText"
-                value={formData.altText}
-                onChange={handleInputChange}
-                maxLength={200}
-                placeholder="e.g. Minimalist living room with solid teak lounge chair and neutral tones"
-                className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-primary text-stone-900 placeholder:text-stone-400"
-              />
-              <p className="mt-1 text-[10px] text-stone-500">
-                Screen-reader description. Defaults to headline or "Promotional Banner" if left blank.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 2: Display Priority & Scheduling */}
-          <div className="bg-white rounded-xl border border-stone-200 p-5 shadow-xs space-y-4">
-            <div className="flex items-center space-x-2 pb-3 border-b border-stone-100">
-              <span className="p-1 rounded bg-stone-100 text-brand-primary">
-                <Layers className="w-4 h-4" />
-              </span>
-              <h3 className="text-xs font-semibold text-stone-900 uppercase tracking-wider">
-                2. Carousel Settings & Timing
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Display Order */}
+          {/* A. Banner Artwork */}
+          <SectionCard title="Banner Artwork" icon={ImageIcon}>
+            <div className="space-y-4">
               <div>
-                <label
-                  htmlFor="sortOrder"
-                  className="block text-xs font-semibold text-stone-700 mb-1"
-                >
-                  Display Order Position
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-stone-700">
+                    Artwork File <span className="text-red-500">*</span>
+                  </label>
+                  {!formData.image && (
+                    <span className="text-[10px] text-stone-400 hidden sm:inline">
+                      1920 × 700 px recommended · JPG / PNG / WebP · Max 8 MB
+                    </span>
+                  )}
+                </div>
+                <BannerImageUploader
+                  value={formData.image}
+                  imageKey={formData.imageKey}
+                  onChange={handleImageUploaded}
+                  disabled={isSubmitting}
+                  error={fieldErrors.image}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="altText" className="block text-xs font-semibold text-stone-700 mb-1">
+                  Image Alt Text
+                  <span className="ml-1 font-normal text-stone-400 text-[11px]">(Accessibility &amp; SEO)</span>
                 </label>
                 <input
-                  type="number"
-                  id="sortOrder"
-                  name="sortOrder"
-                  min="0"
-                  step="1"
-                  value={formData.sortOrder}
+                  type="text"
+                  id="altText"
+                  name="altText"
+                  value={formData.altText}
                   onChange={handleInputChange}
-                  className={`w-full px-3 py-1.5 text-xs bg-white border rounded-lg focus:outline-none focus:ring-1 text-stone-900 ${
-                    fieldErrors.sortOrder
-                      ? 'border-red-400 focus:ring-red-500'
-                      : 'border-stone-300 focus:ring-brand-primary'
-                  }`}
+                  maxLength={200}
+                  placeholder="e.g. Minimalist living room with solid teak lounge chair and neutral tones"
+                  className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-primary text-stone-900 placeholder:text-stone-400"
                 />
-                <p className="mt-1 text-[10px] text-stone-500">
-                  Lower numbers display first (0 is highest priority).
-                </p>
-                {fieldErrors.sortOrder && (
-                  <p className="mt-1 text-xs text-red-600">{fieldErrors.sortOrder}</p>
-                )}
-              </div>
-
-              {/* Active Status */}
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  Publish Status
-                </label>
-                <div className="h-9 flex items-center justify-between p-2 rounded-lg border border-stone-200 bg-stone-50">
-                  <span className="text-xs text-stone-700 font-medium truncate mr-1">
-                    {formData.isActive ? 'Active on Storefront' : 'Hidden (Draft)'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData((prev) => ({ ...prev, isActive: !prev.isActive }))
-                    }
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                      formData.isActive ? 'bg-emerald-600' : 'bg-stone-300'
-                    }`}
-                    role="switch"
-                    aria-checked={formData.isActive}
-                  >
-                    <span className="sr-only">Toggle banner active</span>
-                    <span
-                      aria-hidden="true"
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        formData.isActive ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Optional Scheduling */}
-            <div className="pt-3 border-t border-stone-100">
-              <div className="flex items-center space-x-1.5 mb-2.5 text-xs font-semibold text-stone-700">
-                <Clock className="w-3.5 h-3.5 text-stone-500" />
-                <span>Optional Scheduling Window</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Start Date */}
-                <div>
-                  <label htmlFor="startDate" className="block text-[11px] font-medium text-stone-600 mb-1">
-                    Start Date & Time
-                  </label>
-                  <input
-                    type="datetime-local"
-                    id="startDate"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-primary text-stone-800"
-                  />
-                  <p className="mt-0.5 text-[10px] text-stone-400">Immediate if blank</p>
-                </div>
-
-                {/* End Date */}
-                <div>
-                  <label htmlFor="endDate" className="block text-[11px] font-medium text-stone-600 mb-1">
-                    End Date & Time
-                  </label>
-                  <input
-                    type="datetime-local"
-                    id="endDate"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    className={`w-full px-2.5 py-1.5 text-xs bg-white border rounded-lg focus:outline-none focus:ring-1 text-stone-800 ${
-                      fieldErrors.endDate
-                        ? 'border-red-400 focus:ring-red-500'
-                        : 'border-stone-300 focus:ring-brand-primary'
-                    }`}
-                  />
-                  <p className="mt-0.5 text-[10px] text-stone-400">Indefinite if blank</p>
-                  {fieldErrors.endDate && (
-                    <p className="mt-1 text-xs text-red-600">{fieldErrors.endDate}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column (7 Cols on LG): Text Overlay & Content Toggles */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="bg-white rounded-xl border border-stone-200 p-5 shadow-xs space-y-5">
-            {/* Master Text Overlay Toggle Card Header */}
-            <div className="pb-4 border-b border-stone-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <span className="p-1 rounded bg-stone-100 text-brand-primary">
-                    <Type className="w-4 h-4" />
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-semibold text-stone-900 tracking-tight">
-                      Storefront Text Overlay
-                    </h3>
-                    <p className="text-xs text-stone-500">
-                      Master control for headlines, descriptions, badges, and CTA buttons.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Master Switch */}
-                <div className="flex items-center space-x-2">
-                  <span className={`text-xs font-bold ${showTextOverlay ? 'text-brand-primary' : 'text-stone-500'}`}>
-                    {showTextOverlay ? 'ENABLED' : 'DISABLED'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleMasterOverlayToggle(!showTextOverlay)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                      showTextOverlay ? 'bg-brand-primary' : 'bg-stone-300'
-                    }`}
-                    role="switch"
-                    aria-checked={showTextOverlay}
-                    title="Toggle Text Overlay"
-                  >
-                    <span className="sr-only">Toggle Text Overlay</span>
-                    <span
-                      aria-hidden="true"
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        showTextOverlay ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {/* Friendly guidance message */}
-              <div className="mt-3 p-3 rounded-lg text-xs flex items-start space-x-2 bg-stone-50 border border-stone-200">
-                <Info className="w-4 h-4 text-stone-500 mt-0.5 shrink-0" />
-                <p className="text-stone-600 leading-relaxed">
-                  {showTextOverlay ? (
-                    <span>
-                      <strong>Text overlay is ON.</strong> Use the independent toggles below to choose which narrative elements appear over the banner image.
-                    </span>
-                  ) : (
-                    <span>
-                      <strong>Text overlay is OFF (Pure Image Banner).</strong> This banner will display as a full-bleed visual image on the storefront without headings, dark gradient scrim, or buttons.
-                    </span>
-                  )}
+                <p className="mt-1 text-[10px] text-stone-400">
+                  Defaults to headline text or &ldquo;Promotional Banner&rdquo; if blank.
                 </p>
               </div>
             </div>
+          </SectionCard>
 
-            {/* INDEPENDENT CONTENT TOGGLES & INPUTS */}
-            {showTextOverlay ? (
-              <div className="space-y-4 animate-in fade-in duration-200">
-                {/* 1. EYEBROW LABEL TOGGLE & INPUT */}
-                <div className={`p-4 rounded-xl border transition-colors ${
-                  showEyebrow ? 'bg-amber-50/40 border-amber-200' : 'bg-stone-50/60 border-stone-200'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-semibold text-stone-900 block">
-                        Show Eyebrow Label
-                      </span>
-                      <span className="text-[11px] text-stone-500 block mt-0.5">
-                        Small uppercase badge displayed directly above the headline (e.g. "Festive Spotlight")
-                      </span>
-                    </div>
+          {/* B. Storefront Text Overlay */}
+          <SectionCard title="Storefront Text Overlay" icon={Type}>
+            <div className="space-y-3">
 
-                    <button
-                      type="button"
-                      onClick={() => setShowEyebrow(!showEyebrow)}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                        showEyebrow ? 'bg-brand-primary' : 'bg-stone-300'
-                      }`}
-                      role="switch"
-                      aria-checked={showEyebrow}
-                    >
-                      <span className="sr-only">Toggle Eyebrow</span>
-                      <span
-                        aria-hidden="true"
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                          showEyebrow ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
+              {/* Master toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-stone-50 border border-stone-200">
+                <div className="flex items-start space-x-2 min-w-0 pr-3">
+                  <Info className="w-4 h-4 text-stone-400 mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-xs font-semibold text-stone-900 block">
+                      {showTextOverlay ? 'Text overlay enabled' : 'Pure image banner (no text overlay)'}
+                    </span>
+                    <span className="text-[11px] text-stone-500 leading-snug block">
+                      {showTextOverlay
+                        ? 'Enable individual elements below to show them on the banner.'
+                        : 'Banner displays as edge-to-edge photography — no headline or CTA.'}
+                    </span>
                   </div>
+                </div>
+                <ToggleSwitch
+                  checked={showTextOverlay}
+                  onChange={handleMasterOverlayToggle}
+                  label="Toggle text overlay"
+                  size="lg"
+                />
+              </div>
 
-                  {showEyebrow && (
-                    <div className="mt-3 pt-3 border-t border-amber-200/60 animate-in fade-in duration-150">
-                      <div className="flex items-center justify-between mb-1">
-                        <label htmlFor="eyebrow" className="text-xs font-semibold text-stone-700">
-                          Eyebrow Text
-                        </label>
-                        <span className="text-[10px] text-stone-400 font-mono">
-                          {formData.eyebrow.length}/100
-                        </span>
+              {showTextOverlay ? (
+                <div className="space-y-2 animate-in fade-in duration-200">
+
+                  {/* Eyebrow */}
+                  <ContentToggleRow
+                    label="Eyebrow Label"
+                    description="Small badge above headline (e.g. «Festive Spotlight»)"
+                    checked={showEyebrow}
+                    onToggle={setShowEyebrow}
+                    error={fieldErrors.eyebrow}
+                  >
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="eyebrow" className="text-xs font-semibold text-stone-700">Eyebrow Text</label>
+                        <span className="text-[10px] text-stone-400 font-mono">{formData.eyebrow.length}/100</span>
                       </div>
                       <input
                         type="text"
@@ -711,55 +747,26 @@ export function BannerFormPage() {
                         value={formData.eyebrow}
                         onChange={handleInputChange}
                         maxLength={100}
-                        placeholder="e.g. Sinka Living Edit, Limited Edition"
-                        className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-primary text-stone-900 placeholder:text-stone-400"
+                        placeholder="e.g. Sinka Living Edit"
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-primary text-stone-900 placeholder:text-stone-400"
                       />
                     </div>
-                  )}
-                </div>
+                  </ContentToggleRow>
 
-                {/* 2. MAIN HEADLINE TOGGLE & INPUT */}
-                <div className={`p-4 rounded-xl border transition-colors ${
-                  showTitle ? 'bg-amber-50/40 border-amber-200' : 'bg-stone-50/60 border-stone-200'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-semibold text-stone-900 block">
-                        Show Main Headline
-                      </span>
-                      <span className="text-[11px] text-stone-500 block mt-0.5">
-                        Primary bold headline text (e.g. "Handcrafted Solid Teak Living Essentials")
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowTitle(!showTitle)}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                        showTitle ? 'bg-brand-primary' : 'bg-stone-300'
-                      }`}
-                      role="switch"
-                      aria-checked={showTitle}
-                    >
-                      <span className="sr-only">Toggle Headline</span>
-                      <span
-                        aria-hidden="true"
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                          showTitle ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {showTitle && (
-                    <div className="mt-3 pt-3 border-t border-amber-200/60 animate-in fade-in duration-150">
-                      <div className="flex items-center justify-between mb-1">
+                  {/* Headline */}
+                  <ContentToggleRow
+                    label="Main Headline"
+                    description="Primary bold heading displayed prominently over the banner"
+                    checked={showTitle}
+                    onToggle={setShowTitle}
+                    error={fieldErrors.title}
+                  >
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center justify-between">
                         <label htmlFor="title" className="text-xs font-semibold text-stone-700">
                           Headline Text <span className="text-red-500">*</span>
                         </label>
-                        <span className="text-[10px] text-stone-400 font-mono">
-                          {formData.title.length}/150
-                        </span>
+                        <span className="text-[10px] text-stone-400 font-mono">{formData.title.length}/150</span>
                       </div>
                       <input
                         type="text"
@@ -769,64 +776,25 @@ export function BannerFormPage() {
                         onChange={handleInputChange}
                         maxLength={150}
                         placeholder="e.g. Handcrafted Solid Teak Living Essentials"
-                        className={`w-full px-3 py-2 text-xs bg-white border rounded-lg focus:outline-none focus:ring-1 text-stone-900 placeholder:text-stone-400 ${
-                          fieldErrors.title
-                            ? 'border-red-400 focus:ring-red-500'
-                            : 'border-stone-300 focus:ring-brand-primary'
+                        className={`w-full px-3 py-1.5 text-xs bg-white border rounded-lg focus:outline-none focus:ring-1 text-stone-900 placeholder:text-stone-400 ${
+                          fieldErrors.title ? 'border-red-400 focus:ring-red-400' : 'border-stone-300 focus:ring-brand-primary'
                         }`}
                       />
-                      {fieldErrors.title && (
-                        <p className="mt-1 text-xs text-red-600 flex items-center">
-                          <AlertCircle className="w-3 h-3 mr-1" />
-                          {fieldErrors.title}
-                        </p>
-                      )}
                     </div>
-                  )}
-                </div>
+                  </ContentToggleRow>
 
-                {/* 3. SUBTITLE TOGGLE & INPUT */}
-                <div className={`p-4 rounded-xl border transition-colors ${
-                  showSubtitle ? 'bg-amber-50/40 border-amber-200' : 'bg-stone-50/60 border-stone-200'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-semibold text-stone-900 block">
-                        Show Subtitle / Description
-                      </span>
-                      <span className="text-[11px] text-stone-500 block mt-0.5">
-                        Secondary narrative copy beneath the headline
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowSubtitle(!showSubtitle)}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                        showSubtitle ? 'bg-brand-primary' : 'bg-stone-300'
-                      }`}
-                      role="switch"
-                      aria-checked={showSubtitle}
-                    >
-                      <span className="sr-only">Toggle Subtitle</span>
-                      <span
-                        aria-hidden="true"
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                          showSubtitle ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {showSubtitle && (
-                    <div className="mt-3 pt-3 border-t border-amber-200/60 animate-in fade-in duration-150">
-                      <div className="flex items-center justify-between mb-1">
-                        <label htmlFor="subtitle" className="text-xs font-semibold text-stone-700">
-                          Subtitle Copy
-                        </label>
-                        <span className="text-[10px] text-stone-400 font-mono">
-                          {formData.subtitle.length}/300
-                        </span>
+                  {/* Subtitle */}
+                  <ContentToggleRow
+                    label="Subtitle / Description"
+                    description="Secondary narrative copy beneath the headline"
+                    checked={showSubtitle}
+                    onToggle={setShowSubtitle}
+                    error={fieldErrors.subtitle}
+                  >
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="subtitle" className="text-xs font-semibold text-stone-700">Subtitle Copy</label>
+                        <span className="text-[10px] text-stone-400 font-mono">{formData.subtitle.length}/300</span>
                       </div>
                       <textarea
                         id="subtitle"
@@ -836,77 +804,43 @@ export function BannerFormPage() {
                         rows={2}
                         maxLength={300}
                         placeholder="e.g. Timeless aesthetics, sustainably harvested hardwood, and mindful living essentials."
-                        className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-primary text-stone-900 placeholder:text-stone-400 resize-none"
+                        className="w-full px-3 py-1.5 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-primary text-stone-900 placeholder:text-stone-400 resize-none"
                       />
                     </div>
-                  )}
-                </div>
+                  </ContentToggleRow>
 
-                {/* 4. CTA BUTTON TOGGLE & INPUTS */}
-                <div className={`p-4 rounded-xl border transition-colors ${
-                  showCta ? 'bg-amber-50/40 border-amber-200' : 'bg-stone-50/60 border-stone-200'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-semibold text-stone-900 block">
-                        Show Call to Action (CTA) Button
-                      </span>
-                      <span className="text-[11px] text-stone-500 block mt-0.5">
-                        Interactive button routing customers to collections or product categories
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowCta(!showCta)}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                        showCta ? 'bg-brand-primary' : 'bg-stone-300'
-                      }`}
-                      role="switch"
-                      aria-checked={showCta}
-                    >
-                      <span className="sr-only">Toggle CTA</span>
-                      <span
-                        aria-hidden="true"
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                          showCta ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {showCta && (
-                    <div className="mt-3 pt-3 border-t border-amber-200/60 space-y-3 animate-in fade-in duration-150">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* CTA Label */}
-                        <div>
-                          <label htmlFor="ctaText" className="block text-xs font-semibold text-stone-700 mb-1">
-                            CTA Button Label <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            id="ctaText"
-                            name="ctaText"
-                            value={formData.ctaText}
-                            onChange={handleInputChange}
-                            maxLength={50}
-                            placeholder="e.g. Shop Collection, Explore Sofas"
-                            className={`w-full px-3 py-1.5 text-xs bg-white border rounded-lg focus:outline-none focus:ring-1 text-stone-900 placeholder:text-stone-400 ${
-                              fieldErrors.ctaText
-                                ? 'border-red-400 focus:ring-red-500'
-                                : 'border-stone-300 focus:ring-brand-primary'
-                            }`}
-                          />
-                          {fieldErrors.ctaText && (
-                            <p className="mt-1 text-xs text-red-600">{fieldErrors.ctaText}</p>
-                          )}
-                        </div>
-
-                        {/* CTA Destination */}
-                        <div>
-                          <label htmlFor="ctaLink" className="block text-xs font-semibold text-stone-700 mb-1">
-                            Destination Link / Path
-                          </label>
+                  {/* CTA */}
+                  <ContentToggleRow
+                    label="Call to Action (CTA) Button"
+                    description="Interactive button routing customers to a collection or category"
+                    checked={showCta}
+                    onToggle={setShowCta}
+                  >
+                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="ctaText" className="block text-xs font-semibold text-stone-700 mb-1">
+                          Button Label <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="ctaText"
+                          name="ctaText"
+                          value={formData.ctaText}
+                          onChange={handleInputChange}
+                          maxLength={50}
+                          placeholder="e.g. Shop Collection"
+                          className={`w-full px-3 py-1.5 text-xs bg-white border rounded-lg focus:outline-none focus:ring-1 text-stone-900 placeholder:text-stone-400 ${
+                            fieldErrors.ctaText ? 'border-red-400 focus:ring-red-400' : 'border-stone-300 focus:ring-brand-primary'
+                          }`}
+                        />
+                        {fieldErrors.ctaText && <p className="mt-1 text-xs text-red-600">{fieldErrors.ctaText}</p>}
+                      </div>
+                      <div>
+                        <label htmlFor="ctaLink" className="block text-xs font-semibold text-stone-700 mb-1">
+                          Destination Link
+                        </label>
+                        <div className="relative">
+                          <LinkIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-400 pointer-events-none" />
                           <input
                             type="text"
                             id="ctaLink"
@@ -914,58 +848,233 @@ export function BannerFormPage() {
                             value={formData.ctaLink}
                             onChange={handleInputChange}
                             maxLength={500}
-                            placeholder="e.g. /shop, /products?category=sofas"
-                            className="w-full px-3 py-1.5 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-primary text-stone-900 placeholder:text-stone-400 font-mono"
+                            placeholder="/shop or /products?category=sofas"
+                            className="w-full pl-7 pr-3 py-1.5 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-primary text-stone-900 placeholder:text-stone-400 font-mono"
                           />
                         </div>
+                        {fieldErrors.ctaLink && <p className="mt-1 text-xs text-red-600">{fieldErrors.ctaLink}</p>}
                       </div>
                     </div>
-                  )}
+                  </ContentToggleRow>
+                </div>
+              ) : (
+                /* Overlay OFF: compact notice */
+                <div className="flex items-center justify-between p-3 rounded-lg border border-dashed border-stone-300 bg-stone-50/60">
+                  <span className="text-[11px] text-stone-500">
+                    No text will appear on this banner. Customers see edge-to-edge photography.
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleMasterOverlayToggle(true)}
+                    className="text-xs shrink-0 ml-3 inline-flex items-center space-x-1"
+                  >
+                    <Type className="w-3 h-3" />
+                    <span>Add Text</span>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </SectionCard>
+
+          {/* C. Carousel Settings & Scheduling */}
+          <SectionCard title="Carousel Settings &amp; Scheduling" icon={Layers}>
+            <div className="space-y-4">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Display order */}
+                <div>
+                  <label htmlFor="sortOrder" className="block text-xs font-semibold text-stone-700 mb-1">
+                    Display Position
+                  </label>
+                  <input
+                    type="number"
+                    id="sortOrder"
+                    name="sortOrder"
+                    min="0"
+                    step="1"
+                    value={formData.sortOrder}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 text-xs bg-white border rounded-lg focus:outline-none focus:ring-1 text-stone-900 ${
+                      fieldErrors.sortOrder ? 'border-red-400 focus:ring-red-400' : 'border-stone-300 focus:ring-brand-primary'
+                    }`}
+                  />
+                  <p className="mt-1 text-[10px] text-stone-400">Lower numbers display first (0 = highest priority).</p>
+                  {fieldErrors.sortOrder && <p className="mt-1 text-xs text-red-600">{fieldErrors.sortOrder}</p>}
+                </div>
+
+                {/* Active status */}
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Publish Status</label>
+                  <div className="flex items-center justify-between p-2.5 rounded-lg border border-stone-200 bg-stone-50 h-9">
+                    <div className="flex items-center space-x-2">
+                      <span className={`w-2 h-2 rounded-full ${formData.isActive ? 'bg-emerald-500' : 'bg-stone-300'}`} />
+                      <span className="text-xs font-medium text-stone-700">
+                        {formData.isActive ? 'Active on storefront' : 'Hidden (Draft)'}
+                      </span>
+                    </div>
+                    <ToggleSwitch
+                      checked={formData.isActive}
+                      onChange={(val) => setFormData((p) => ({ ...p, isActive: val }))}
+                      label="Toggle banner active"
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px] text-stone-400">Draft banners are saved but not displayed.</p>
                 </div>
               </div>
-            ) : (
-              <div className="py-8 px-4 text-center rounded-xl border border-dashed border-stone-300 bg-stone-50/50">
-                <div className="w-10 h-10 rounded-full bg-stone-200/70 text-stone-500 flex items-center justify-center mx-auto mb-2">
-                  <ImageIcon className="w-5 h-5" />
+
+              {/* Scheduling */}
+              <div className="pt-3 border-t border-stone-100">
+                <div className="flex items-center space-x-1.5 mb-2.5">
+                  <Clock className="w-3.5 h-3.5 text-stone-400" />
+                  <span className="text-xs font-semibold text-stone-700">Optional Scheduling Window</span>
                 </div>
-                <p className="text-xs font-semibold text-stone-800">Pure Image Banner Mode</p>
-                <p className="text-[11px] text-stone-500 max-w-sm mx-auto mt-0.5">
-                  No text, headline, or button will be rendered. Customers will see your edge-to-edge photography in full clarity.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleMasterOverlayToggle(true)}
-                  className="mt-3 text-xs inline-flex items-center space-x-1"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="startDate" className="block text-[11px] font-medium text-stone-600 mb-1">
+                      Start Date &amp; Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      id="startDate"
+                      name="startDate"
+                      value={formData.startDate}
+                      onChange={handleInputChange}
+                      className="w-full px-2.5 py-1.5 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-primary text-stone-800"
+                    />
+                    <p className="mt-0.5 text-[10px] text-stone-400">Immediate if blank.</p>
+                  </div>
+                  <div>
+                    <label htmlFor="endDate" className="block text-[11px] font-medium text-stone-600 mb-1">
+                      End Date &amp; Time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      id="endDate"
+                      name="endDate"
+                      value={formData.endDate}
+                      onChange={handleInputChange}
+                      className={`w-full px-2.5 py-1.5 text-xs bg-white border rounded-lg focus:outline-none focus:ring-1 text-stone-800 ${
+                        fieldErrors.endDate ? 'border-red-400 focus:ring-red-400' : 'border-stone-300 focus:ring-brand-primary'
+                      }`}
+                    />
+                    <p className="mt-0.5 text-[10px] text-stone-400">Indefinite if blank.</p>
+                    {fieldErrors.endDate && <p className="mt-1 text-xs text-red-600">{fieldErrors.endDate}</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* Mobile/tablet bottom action row */}
+          <div className="flex items-center justify-end space-x-2 pt-1 xl:hidden">
+            <Link to={ROUTES.BANNERS}>
+              <Button variant="secondary" size="sm">Cancel</Button>
+            </Link>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={isSubmitting}
+              className="inline-flex items-center space-x-1.5 shadow-xs"
+            >
+              {publishBtn}
+            </Button>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            RIGHT COLUMN — Compact Sticky Live Preview + Summary
+            ══════════════════════════════════════════════════════════════════════ */}
+        <div className="xl:sticky xl:top-6 space-y-3">
+
+          {/* Live preview card */}
+          <CompactBannerPreview
+            image={formData.image}
+            altText={formData.altText}
+            showTextOverlay={showTextOverlay}
+            showEyebrow={showEyebrow}
+            eyebrow={formData.eyebrow}
+            showTitle={showTitle}
+            title={formData.title}
+            showSubtitle={showSubtitle}
+            subtitle={formData.subtitle}
+            showCta={showCta}
+            ctaText={formData.ctaText}
+            ctaLink={formData.ctaLink}
+            isActive={formData.isActive}
+            sortOrder={Number(formData.sortOrder) || 0}
+          />
+
+          {/* Configuration summary */}
+          <div className="bg-white rounded-xl border border-stone-200 shadow-xs p-4">
+            <h4 className="text-xs font-semibold text-stone-700 uppercase tracking-wide mb-3">
+              Configuration Summary
+            </h4>
+            <div className="space-y-1.5">
+              {[
+                {
+                  label: 'Artwork',
+                  value: formData.image ? (
+                    <span className="text-emerald-600 flex items-center space-x-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Uploaded</span>
+                    </span>
+                  ) : (
+                    <span className="text-red-500 font-semibold">Required</span>
+                  ),
+                },
+                {
+                  label: 'Text Overlay',
+                  value: showTextOverlay
+                    ? <span className="text-brand-primary font-medium">Enabled</span>
+                    : <span className="text-stone-400">Off (image-only)</span>,
+                },
+                {
+                  label: 'Status',
+                  value: formData.isActive
+                    ? <span className="text-emerald-600 font-medium">Active</span>
+                    : <span className="text-stone-400">Draft</span>,
+                },
+                {
+                  label: 'Position',
+                  value: <span className="font-mono text-stone-600">#{formData.sortOrder}</span>,
+                },
+                {
+                  label: 'Scheduled',
+                  value: formData.startDate || formData.endDate
+                    ? <span className="text-amber-600 font-medium">Yes</span>
+                    : <span className="text-stone-400">No</span>,
+                },
+              ].map(({ label, value }) => (
+                <div
+                  key={label}
+                  className="flex items-center justify-between py-1.5 border-b border-stone-50 last:border-0 text-xs"
                 >
-                  <Type className="w-3.5 h-3.5" />
-                  <span>Enable Text Overlay</span>
-                </Button>
-              </div>
-            )}
+                  <span className="text-stone-500">{label}</span>
+                  <span>{value}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Bottom Submit Actions */}
-          <div className="flex items-center justify-end space-x-3 pt-2">
-            <Link to={ROUTES.BANNERS}>
-              <Button variant="secondary" size="md">
+          {/* Desktop-only action buttons in right column */}
+          <div className="hidden xl:flex items-center space-x-2">
+            <Link to={ROUTES.BANNERS} className="flex-1">
+              <Button variant="secondary" size="sm" className="w-full justify-center">
                 Cancel
               </Button>
             </Link>
             <Button
               type="submit"
+              form="banner-form"
               variant="primary"
-              size="md"
+              size="sm"
               disabled={isSubmitting}
-              className="inline-flex items-center space-x-2 shadow-xs cursor-pointer"
+              className="flex-1 inline-flex items-center justify-center space-x-1.5 shadow-xs"
             >
-              {isSubmitting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              <span>{isSubmitting ? 'Saving...' : isEditing ? 'Update Banner' : 'Publish Banner'}</span>
+              {publishBtn}
             </Button>
           </div>
         </div>

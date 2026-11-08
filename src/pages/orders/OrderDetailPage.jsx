@@ -146,7 +146,7 @@ export function OrderDetailPage() {
 
   if (error || !order) {
     return (
-      <div className="p-6 font-sans space-y-4 max-w-4xl mx-auto">
+      <div className="p-6 font-sans space-y-4">
         <Link
           to={ROUTES.ORDERS}
           className="inline-flex items-center text-xs font-semibold text-stone-600 hover:text-stone-900"
@@ -195,7 +195,7 @@ export function OrderDetailPage() {
   };
 
   return (
-    <div className="space-y-6 font-sans max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 font-sans pb-12">
       {/* Top Breadcrumb & Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

@@ -276,24 +276,24 @@ export function OfferImageUploader({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative border-2 border-dashed rounded-lg p-6 sm:p-8 text-center transition-all ${
+          className={`relative border-2 border-dashed rounded-lg p-5 text-center transition-all ${
             isDragOver
               ? 'border-brand-primary bg-brand-primary/5 ring-2 ring-brand-primary/20'
               : 'border-stone-300 hover:border-stone-400 bg-stone-50/50'
           } ${disabled || isUploading ? 'opacity-70 cursor-not-allowed' : ''}`}
         >
-          <div className="flex flex-col items-center justify-center space-y-3">
+          <div className="flex flex-col items-center justify-center space-y-2">
             {/* Upload Icon or Spinner */}
-            <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 shadow-2xs">
+            <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 shadow-2xs">
               {isUploading ? (
-                <Loader2 className="w-6 h-6 animate-spin text-brand-primary" />
+                <Loader2 className="w-5 h-5 animate-spin text-brand-primary" />
               ) : (
-                <UploadCloud className="w-6 h-6 text-stone-600" />
+                <UploadCloud className="w-5 h-5 text-stone-600" />
               )}
             </div>
 
             {/* Instruction Copy */}
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <div className="text-xs sm:text-sm font-medium text-stone-800">
                 <span>Drag and drop your banner image here, or </span>
                 <button
@@ -305,7 +305,7 @@ export function OfferImageUploader({
                   browse from device
                 </button>
               </div>
-              <p className="text-[11px] text-stone-500">
+              <p className="text-[11px] text-stone-400">
                 Supports JPG, JPEG, PNG, and WebP (up to 5 MB)
               </p>
             </div>
@@ -319,7 +319,7 @@ export function OfferImageUploader({
                 onClick={handleTriggerPicker}
                 disabled={disabled}
                 icon={FileImage}
-                className="mt-1 font-semibold text-xs border-stone-300 hover:bg-stone-100"
+                className="mt-0.5 font-semibold text-xs border-stone-300 hover:bg-stone-100"
               >
                 Choose Banner Image
               </Button>
@@ -327,8 +327,8 @@ export function OfferImageUploader({
 
             {/* Real-time Upload Progress Bar */}
             {isUploading && (
-              <div className="w-full max-w-xs mx-auto pt-2">
-                <div className="flex justify-between text-[11px] text-stone-600 font-medium mb-1.5">
+              <div className="w-full max-w-xs mx-auto pt-1">
+                <div className="flex justify-between text-[11px] text-stone-600 font-medium mb-1">
                   <span className="flex items-center space-x-1">
                     <Loader2 className="w-3 h-3 animate-spin text-brand-primary mr-1" />
                     <span>Uploading to Cloudflare R2...</span>

@@ -1,5 +1,7 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { productService } from '../src/services/product.service.js';
 import {
   PRODUCT_CATEGORIES,
@@ -199,6 +201,48 @@ describe('Product Service & Constants Unit Tests', () => {
         message: 'At least one image file is required for upload.',
       }
     );
+  });
+
+  test('ProductFormPage implements compact two-column CMS workspace with sticky storefront preview', () => {
+    const productFormPath = path.resolve('src/pages/products/ProductFormPage.jsx');
+    const content = fs.readFileSync(productFormPath, 'utf8');
+
+    // 1. Two-column responsive grid layout: Left 70-75%, Right 25-30%
+    assert.match(content, /grid-cols-1\s+lg:grid-cols-\[minmax\(0,1fr\)_340px\]\s+xl:grid-cols-\[minmax\(0,1fr\)_360px\]/);
+
+    // 2. Right sidebar is sticky on desktop
+    assert.match(content, /lg:sticky\s+lg:top-4/);
+
+    // 3. Compact section cards for General Information, Pricing & Inventory, Product Images
+    assert.match(content, /General Information/);
+    assert.match(content, /Pricing &amp; Inventory/);
+    assert.match(content, /Product Images/);
+
+    // 4. Compact storefront live preview with category, pricing, discount, and Add to Cart
+    assert.match(content, /Storefront Preview/);
+    assert.match(content, /Add to Cart/);
+
+    // 5. Catalogue visibility card with Active Status and Featured Product toggles
+    assert.match(content, /Catalogue Visibility/);
+    assert.match(content, /Active Status/);
+    assert.match(content, /Featured Product/);
+
+    // 6. Primary and secondary action buttons in header and sidebar
+    assert.match(content, /Publish Product/);
+  });
+
+  test('ProductImageUploader implements compact gallery with primary cover and inline add tile', () => {
+    const uploaderPath = path.resolve('src/components/products/ProductImageUploader.jsx');
+    const content = fs.readFileSync(uploaderPath, 'utf8');
+
+    // Primary cover indicator
+    assert.match(content, /PRIMARY/);
+
+    // Inline add tile
+    assert.match(content, /Add More/);
+
+    // Alt description field
+    assert.match(content, /Alt description\.\.\./);
   });
 });
 

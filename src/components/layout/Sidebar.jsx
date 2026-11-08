@@ -1,10 +1,31 @@
-import { NavLink } from 'react-router-dom';
+import { useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, ShoppingBag, Image as ImageIcon, Package, Tag, ShieldCheck, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { ROUTES } from '../../constants.js';
 
 export function Sidebar({ isOpen, onClose }) {
   const { user } = useAuth();
+  const location = useLocation();
+
+  // Close drawer on route navigation
+  useEffect(() => {
+    if (isOpen) {
+      onClose();
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keyboard accessibility: Escape key closes the drawer
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const navItems = [
     {
@@ -36,19 +57,19 @@ export function Sidebar({ isOpen, onClose }) {
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Mobile / Tablet Drawer Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-stone-900/50 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-stone-900/50 backdrop-blur-xs lg:hidden animate-in fade-in duration-150"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
-      {/* Sidebar Panel */}
+      {/* Sidebar Panel — Slide-in Drawer on Mobile & Tablet (<1024px), Static pinned on Desktop (>=1024px) */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-white border-r border-stone-200 flex flex-col transition-transform duration-200 ease-in-out md:static md:translate-x-0 md:h-full md:shrink-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 bottom-0 left-0 z-50 w-[280px] lg:w-64 bg-white border-r border-stone-200 flex flex-col transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 lg:h-full lg:shrink-0 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:shadow-none'
         }`}
         aria-label="Admin Navigation"
       >
@@ -72,12 +93,12 @@ export function Sidebar({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Close Button on Mobile */}
+          {/* Close Button on Mobile & Tablet */}
           <button
             type="button"
             onClick={onClose}
-            className="md:hidden p-1.5 rounded-md text-stone-500 hover:text-stone-800 hover:bg-stone-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-            aria-label="Close navigation"
+            className="lg:hidden p-1.5 rounded-md text-stone-500 hover:text-stone-800 hover:bg-stone-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary cursor-pointer"
+            aria-label="Close navigation menu"
           >
             <X className="w-5 h-5" />
           </button>

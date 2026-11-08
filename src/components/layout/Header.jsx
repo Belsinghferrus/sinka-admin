@@ -5,12 +5,12 @@ export function Header({ onOpenSidebar }) {
   return (
     <header className="h-16 shrink-0 bg-white border-b border-stone-200 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 font-sans">
       <div className="flex items-center space-x-3">
-        {/* Mobile menu button */}
+        {/* Mobile and Tablet hamburger button */}
         <button
           type="button"
           onClick={onOpenSidebar}
-          className="md:hidden p-2 rounded-md text-stone-600 hover:text-stone-900 hover:bg-stone-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-          aria-label="Open sidebar"
+          className="lg:hidden p-2 -ml-1 rounded-md text-stone-600 hover:text-stone-900 hover:bg-stone-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary cursor-pointer"
+          aria-label="Open navigation menu"
         >
           <Menu className="w-5 h-5" />
         </button>

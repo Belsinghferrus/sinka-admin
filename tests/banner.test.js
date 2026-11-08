@@ -1,5 +1,7 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { bannerService } from '../src/services/banner.service.js';
 import {
   MAX_BANNER_IMAGE_SIZE_BYTES,
@@ -382,6 +384,41 @@ describe('Homepage Hero Banner Service & Cloudflare R2 Upload Tests', () => {
     await assert.rejects(async () => {
       await bannerService.deleteUploadedImage('');
     }, { message: 'Image key is required for deletion.' });
+  });
+
+  test('BannerFormPage implements compact two-column CMS layout with sticky live preview', () => {
+    const bannerFormPath = path.resolve('src/pages/banners/BannerFormPage.jsx');
+    const content = fs.readFileSync(bannerFormPath, 'utf8');
+
+    // 1. Two-column responsive grid workspace: left config (~65%), right preview (~35%)
+    assert.match(content, /grid-cols-1\s+xl:grid-cols-\[minmax\(0,1\.85fr\)_minmax\(0,1fr\)\]/);
+
+    // 2. Right preview column is sticky on desktop
+    assert.match(content, /xl:sticky\s+xl:top-6/);
+
+    // 3. Compact live preview contains viewport toggle (Desktop / Mobile)
+    assert.match(content, /Desktop/);
+    assert.match(content, /Mobile/);
+    assert.match(content, /setViewportMode/);
+
+    // 4. Compact artwork upload section with BannerImageUploader
+    assert.match(content, /BannerImageUploader/);
+    assert.match(content, /Banner Artwork/);
+
+    // 5. Text overlay toggle and narrative inputs
+    assert.match(content, /Storefront Text Overlay/);
+    assert.match(content, /Eyebrow Label/);
+    assert.match(content, /Main Headline/);
+    assert.match(content, /Subtitle \/ Description/);
+    assert.match(content, /Call to Action \(CTA\) Button/);
+
+    // 6. Settings section with display position and publish status
+    assert.match(content, /Carousel Settings/);
+    assert.match(content, /Display Position/);
+    assert.match(content, /Publish Status/);
+
+    // 7. No giant full-width preview above the form
+    assert.doesNotMatch(content, /PROMINENT FULL-WIDTH STOREFRONT HERO PREVIEW/);
   });
 });
 
