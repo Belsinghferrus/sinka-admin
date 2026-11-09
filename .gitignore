@@ -28,3 +28,17 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Generated development / AI reports
+*_REPORT.txt
+*_FIX_REPORT.txt
+*_INTEGRATION_REPORT.txt
+*_IMPLEMENTATION_REPORT.txt
+*_ANALYSIS_REPORT.txt
+*_CONFIGURATION_REPORT.txt
+*_DEPLOYMENT_REPORT.txt
+*_REMEDIATION_REPORT.txt
+*_SETUP_REPORT.txt
+*_AUDIT_REPORT.txt
+*_STRUCTURE_REPORT.txt
+

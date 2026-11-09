@@ -1,21 +1,14 @@
 import axios from "axios";
 import { DEFAULT_API_TIMEOUT } from "../constants.js";
+import { API_BASE_URL, BACKEND_URL } from "../config/env.js";
 
 /**
  * Centralized Axios HTTP client for Sinka Admin Panel.
  * Configured with environment-driven base URL, dedicated Admin JWT handling,
  * and standardized error formatting.
  */
-const env =
-  typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : {};
-
-const rawBaseUrl = env.VITE_API_BASE_URL || "http://localhost:5001/api";
-const normalizedBaseUrl = rawBaseUrl.endsWith("/")
-  ? rawBaseUrl.slice(0, -1)
-  : rawBaseUrl;
-
 export const apiClient = axios.create({
-  baseURL: normalizedBaseUrl,
+  baseURL: API_BASE_URL,
   timeout: DEFAULT_API_TIMEOUT,
   headers: {
     "Content-Type": "application/json",
@@ -124,7 +117,7 @@ apiClient.interceptors.response.use(
         status: 0,
         code: "NETWORK_ERROR",
         message: isNetworkError
-          ? "Unable to reach the Sinka backend server. Please verify the backend service is running on http://localhost:5001 and CORS permits http://localhost:5174."
+          ? `Unable to reach the Sinka backend server (${BACKEND_URL}). Please verify the backend service is running and CORS permits requests from this origin.`
           : "Network request failed. Please check your network connection.",
         data: null,
       });
