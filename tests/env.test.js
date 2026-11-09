@@ -7,11 +7,11 @@ import apiClient, { ADMIN_TOKEN_KEY, getAuthToken, setAuthToken, clearAuthToken 
 import serviceApiClient from '../src/services/api.js';
 
 describe('Vite Multi-Environment API Configuration Tests', () => {
-  test('1. .env.development defines local development backend URL on port 5001', () => {
+  test('1. .env.development defines development backend URL pointing to Render backend', () => {
     const devEnvPath = path.resolve('.env.development');
     assert.ok(fs.existsSync(devEnvPath), '.env.development must exist');
     const content = fs.readFileSync(devEnvPath, 'utf8');
-    assert.match(content, /VITE_API_BASE_URL=http:\/\/localhost:5001/);
+    assert.match(content, /VITE_API_BASE_URL=https:\/\/sinka-backend-xxgb\.onrender\.com/);
   });
 
   test('2. .env.production defines Render production backend URL', () => {
@@ -25,7 +25,7 @@ describe('Vite Multi-Environment API Configuration Tests', () => {
     const exampleEnvPath = path.resolve('.env.example');
     assert.ok(fs.existsSync(exampleEnvPath), '.env.example must exist');
     const content = fs.readFileSync(exampleEnvPath, 'utf8');
-    assert.match(content, /VITE_API_BASE_URL=http:\/\/localhost:5001/);
+    assert.match(content, /VITE_API_BASE_URL=https:\/\/sinka-backend-xxgb\.onrender\.com/);
     assert.doesNotMatch(content, /secret|password|key.*=.+/i);
   });
 

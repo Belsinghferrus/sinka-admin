@@ -7,7 +7,7 @@
  * Environment resolution precedence:
  * 1. import.meta.env.VITE_API_BASE_URL (injected by Vite per mode / Netlify)
  * 2. process.env.VITE_API_BASE_URL (fallback for Node.js test runners)
- * 3. Default fallback: http://localhost:5001
+ * 3. Default fallback: https://sinka-backend-xxgb.onrender.com
  */
 
 const getRawBaseUrl = () => {
@@ -18,7 +18,7 @@ const getRawBaseUrl = () => {
   if (proc?.env?.VITE_API_BASE_URL) {
     return proc.env.VITE_API_BASE_URL;
   }
-  return 'http://localhost:5001';
+  return 'https://sinka-backend-xxgb.onrender.com';
 };
 
 const rawBaseUrl = getRawBaseUrl().trim();
