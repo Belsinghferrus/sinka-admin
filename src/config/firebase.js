@@ -3,15 +3,18 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 /**
  * Public Firebase Web App Configuration for Sinka Admin.
- * Reuses the verified Sinka Firebase project credentials.
+ * Loaded strictly from Vite environment variables (VITE_FIREBASE_*).
  *
- * NOTE: Never expose Firebase Admin SDK credentials or service account
- * private keys in frontend browser client code.
+ * NOTE: Never expose Firebase Admin SDK credentials, service account keys,
+ * or private server secrets in frontend browser client code.
  */
-const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
+const env =
+  typeof import.meta !== 'undefined' && import.meta.env
+    ? import.meta.env
+    : (typeof globalThis !== 'undefined' && globalThis.process?.env ? globalThis.process.env : {});
 
 const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || 'AIzaSyCeBi4gl7JLn1NWU6jFoSugV_Mj22PG7do',
+  apiKey: env.VITE_FIREBASE_API_KEY || '',
   authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || 'sinka-project.firebaseapp.com',
   projectId: env.VITE_FIREBASE_PROJECT_ID || 'sinka-project',
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || 'sinka-project.firebasestorage.app',
@@ -21,9 +24,22 @@ const firebaseConfig = {
 };
 
 // Initialize or reuse existing Firebase App instance
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const app = !getApps().length
+  ? initializeApp(firebaseConfig)
+  : getApp();
 
-export const auth = getAuth(app);
+let authInstance = null;
+if (firebaseConfig.apiKey) {
+  try {
+    authInstance = getAuth(app);
+  } catch (err) {
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('[firebase] Auth initialization skipped or failed:', err.message);
+    }
+  }
+}
+
+export const auth = authInstance;
 export const googleProvider = new GoogleAuthProvider();
 
 // Always prompt account selection so admins can select their work/admin account
