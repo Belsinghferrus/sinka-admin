@@ -8,10 +8,15 @@ import {
   Layers,
   Sparkles,
   ExternalLink,
-  Calendar,
   Image as ImageIcon,
   CheckCircle2,
   XCircle,
+  FileText,
+  Sliders,
+  ShieldCheck,
+  RotateCcw,
+  Wrench,
+  Sparkle,
 } from 'lucide-react';
 import { PRODUCT_CATEGORIES, ROUTES } from '../../constants.js';
 import { formatCurrency } from '../../utils/formatCurrency.js';
@@ -40,6 +45,24 @@ export function ProductDetailModal({ product, isOpen, onClose }) {
   const isLowStock = product.stock > 0 && product.stock <= 5;
   const isOutOfStock = product.stock <= 0;
 
+  // Extract specifications (checking both nested specifications and top-level fields)
+  const specs = product.specifications || {};
+  const material = specs.material || product.material;
+  const color = specs.color || product.color;
+  const finish = specs.finish || product.finish;
+  const dimensions = specs.dimensions || product.dimensions;
+  const weight = specs.weight || product.weight;
+  const assembly = specs.assembly || specs.assemblyRequired || product.assembly;
+  const warranty = specs.warranty || product.warranty;
+  const returnPolicy = specs.returnPolicy || product.returnPolicy;
+  const careInstructions = specs.careInstructions || product.careInstructions;
+
+  const hasAnySpec = Boolean(
+    material || color || finish || dimensions || weight || assembly || warranty || returnPolicy || careInstructions
+  );
+
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
@@ -47,7 +70,7 @@ export function ProductDetailModal({ product, isOpen, onClose }) {
       aria-modal="true"
       aria-labelledby="product-detail-title"
     >
-      <div className="relative bg-white rounded-xl shadow-xl border border-stone-200 w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative bg-white rounded-xl shadow-xl border border-stone-200 w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 bg-stone-50/50">
           <div className="flex items-center space-x-2">
@@ -147,6 +170,11 @@ export function ProductDetailModal({ product, isOpen, onClose }) {
                 <h4 className="text-xl font-heading font-bold text-stone-900 leading-snug">
                   {product.name}
                 </h4>
+                {product.shortDescription && (
+                  <p className="mt-1 text-xs text-stone-600 italic">
+                    {product.shortDescription}
+                  </p>
+                )}
               </div>
 
               {/* Pricing Block */}
@@ -225,10 +253,136 @@ export function ProductDetailModal({ product, isOpen, onClose }) {
             </div>
           </div>
 
+          {/* Product Specifications Section */}
+          {hasAnySpec && (
+            <div className="space-y-2 border-t border-stone-200 pt-4">
+              <h5 className="text-xs font-semibold uppercase tracking-wider text-stone-600 flex items-center space-x-1.5">
+                <Sliders className="w-3.5 h-3.5 text-brand-primary" />
+                <span>Product Specifications &amp; Craftsmanship</span>
+              </h5>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs">
+                {material && (
+                  <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200">
+                    <span className="text-[10px] text-stone-400 block uppercase font-medium">Material</span>
+                    <span className="font-medium text-stone-900">{material}</span>
+                  </div>
+                )}
+                {color && (
+                  <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200">
+                    <span className="text-[10px] text-stone-400 block uppercase font-medium">Color / Shade</span>
+                    <span className="font-medium text-stone-900">{color}</span>
+                  </div>
+                )}
+                {finish && (
+                  <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200">
+                    <span className="text-[10px] text-stone-400 block uppercase font-medium">Finish</span>
+                    <span className="font-medium text-stone-900">{finish}</span>
+                  </div>
+                )}
+                {dimensions && (
+                  <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200">
+                    <span className="text-[10px] text-stone-400 block uppercase font-medium">Dimensions</span>
+                    <span className="font-mono text-stone-900">{dimensions}</span>
+                  </div>
+                )}
+                {weight && (
+                  <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200">
+                    <span className="text-[10px] text-stone-400 block uppercase font-medium">Weight</span>
+                    <span className="text-stone-900 font-medium">{weight}</span>
+                  </div>
+                )}
+                {assembly && (
+                  <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200">
+                    <span className="text-[10px] text-stone-400 block uppercase font-medium">Assembly Info</span>
+                    <span className="text-stone-900 font-medium">{assembly}</span>
+                  </div>
+                )}
+                {warranty && (
+                  <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200">
+                    <span className="text-[10px] text-stone-400 block uppercase font-medium">Warranty</span>
+                    <span className="text-stone-900 font-medium">{warranty}</span>
+                  </div>
+                )}
+                {returnPolicy && (
+                  <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200">
+                    <span className="text-[10px] text-stone-400 block uppercase font-medium">Returns &amp; Replacement</span>
+                    <span className="text-stone-900 font-medium">{returnPolicy}</span>
+                  </div>
+                )}
+                {careInstructions && (
+                  <div className="p-2.5 bg-stone-50 rounded-lg border border-stone-200 sm:col-span-2 lg:col-span-3">
+                    <span className="text-[10px] text-stone-400 block uppercase font-medium">Care Instructions</span>
+                    <span className="text-stone-800 leading-relaxed">{careInstructions}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Variants Table */}
+          {variants.length > 0 && (
+            <div className="space-y-2 border-t border-stone-200 pt-4">
+              <h5 className="text-xs font-semibold uppercase tracking-wider text-stone-600 flex items-center space-x-1.5">
+                <Tag className="w-3.5 h-3.5 text-brand-primary" />
+                <span>Product Variants ({variants.length})</span>
+              </h5>
+              <div className="border border-stone-200 rounded-lg overflow-hidden text-xs">
+                <table className="min-w-full divide-y divide-stone-200">
+                  <thead className="bg-stone-50 text-stone-600 font-semibold text-[11px]">
+                    <tr>
+                      <th className="px-3 py-2 text-left">Variant</th>
+                      <th className="px-3 py-2 text-left">SKU</th>
+                      <th className="px-3 py-2 text-left">Attributes</th>
+                      <th className="px-3 py-2 text-right">Price</th>
+                      <th className="px-3 py-2 text-center">Stock</th>
+                      <th className="px-3 py-2 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100 bg-white">
+                    {variants.map((v, i) => (
+                      <tr key={v.id || v._id || i} className="hover:bg-stone-50/50">
+                        <td className="px-3 py-2 font-medium text-stone-900">
+                          <div className="flex items-center space-x-2">
+                            {v.image && (
+                              <img src={v.image} alt={v.name} className="w-6 h-6 rounded object-cover border" />
+                            )}
+                            <span>{v.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 font-mono text-stone-600">{v.sku || '—'}</td>
+                        <td className="px-3 py-2 text-stone-500">
+                          {[v.color, v.size, v.material, v.finish].filter(Boolean).join(' • ') || '—'}
+                        </td>
+                        <td className="px-3 py-2 text-right font-medium text-stone-900">
+                          {formatCurrency(v.price)}
+                        </td>
+                        <td className="px-3 py-2 text-center font-mono">
+                          {v.stock != null ? v.stock : '—'}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          {v.isAvailable !== false ? (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-stone-100 text-stone-600">
+                              Hidden
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* Description */}
           <div className="space-y-2 border-t border-stone-200 pt-4">
-            <h5 className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-              Product Description
+            <h5 className="text-xs font-semibold uppercase tracking-wider text-stone-500 flex items-center space-x-1.5">
+              <FileText className="w-3.5 h-3.5 text-stone-400" />
+              <span>Full Description</span>
             </h5>
             <div className="text-xs sm:text-sm text-stone-700 leading-relaxed bg-stone-50 p-4 rounded-lg border border-stone-200 whitespace-pre-line">
               {product.description || 'No description provided for this product.'}
@@ -291,4 +445,3 @@ export function ProductDetailModal({ product, isOpen, onClose }) {
 }
 
 export default ProductDetailModal;
-

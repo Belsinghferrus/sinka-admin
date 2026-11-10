@@ -243,6 +243,96 @@ describe('Product Service & Constants Unit Tests', () => {
 
     // Alt description field
     assert.match(content, /Alt description\.\.\./);
+
+    // In-place replace capability
+    assert.match(content, /handleTriggerReplace/);
+    assert.match(content, /Replace image/);
+
+    // High-resolution lightbox preview modal
+    assert.match(content, /setPreviewIndex/);
+    assert.match(content, /Preview high-res image/);
+  });
+
+  test('ProductFormPage supports comprehensive product specifications', () => {
+    const productFormPath = path.resolve('src/pages/products/ProductFormPage.jsx');
+    const content = fs.readFileSync(productFormPath, 'utf8');
+
+    // Section title
+    assert.match(content, /Product Details &amp; Specifications/);
+
+    // Short description
+    assert.match(content, /Short Description \/ Summary/);
+
+    // Craftsmanship specifications fields
+    assert.match(content, /Primary Material/);
+    assert.match(content, /Color \/ Shade/);
+    assert.match(content, /Finish \/ Texture/);
+    assert.match(content, /Dimensions \(L x W x H\)/);
+    assert.match(content, /Product Weight/);
+    assert.match(content, /Assembly Information/);
+    assert.match(content, /Warranty Period &amp; Coverage/);
+    assert.match(content, /Return \/ Replacement Policy/);
+    assert.match(content, /Care &amp; Maintenance Instructions/);
+
+    // Structured specifications object construction
+    assert.match(content, /specifications:\s*specs/);
+  });
+
+  test('ProductFormPage supports rich variant management with zero variant: null invariant', () => {
+    const productFormPath = path.resolve('src/pages/products/ProductFormPage.jsx');
+    const content = fs.readFileSync(productFormPath, 'utf8');
+
+    // Variant Master Toggle
+    assert.match(content, /Product has Multiple Variants/);
+
+    // Variant action handlers: Add, Duplicate, Remove, Change
+    assert.match(content, /handleAddVariant/);
+    assert.match(content, /handleDuplicateVariant/);
+    assert.match(content, /handleRemoveVariant/);
+    assert.match(content, /handleVariantChange/);
+
+    // Variant attributes & fields
+    assert.match(content, /Variant Title/);
+    assert.match(content, /Variant SKU/);
+    assert.match(content, /Stock Units/);
+    assert.match(content, /MRP \/ Original/);
+    assert.match(content, /Variant Image:/);
+
+    // Invariant: Never send variant: null (always array)
+    assert.doesNotMatch(content, /variant:\s*null/);
+    assert.match(content, /variants:\s*formData\.hasVariants/);
+
+    // Duplicate variant name validation
+    assert.match(content, /Variant name must be unique/);
+  });
+
+  test('ProductFormPage provides dual-mode live storefront preview (Card View and Detailed Customer PDP)', () => {
+    const productFormPath = path.resolve('src/pages/products/ProductFormPage.jsx');
+    const content = fs.readFileSync(productFormPath, 'utf8');
+
+    // Dual mode buttons
+    assert.match(content, /Detail PDP/);
+    assert.match(content, /Card/);
+
+    // Interactive PDP elements
+    assert.match(content, /Available Configurations:/);
+    assert.match(content, /Quick Specifications:/);
+    assert.match(content, /previewSelectedVariant/);
+  });
+
+  test('ProductDetailModal renders structured specifications grid and variants table', () => {
+    const modalPath = path.resolve('src/components/products/ProductDetailModal.jsx');
+    const content = fs.readFileSync(modalPath, 'utf8');
+
+    // Specifications section
+    assert.match(content, /Product Specifications &amp; Craftsmanship/);
+    assert.match(content, /Material/);
+    assert.match(content, /Dimensions/);
+    assert.match(content, /Warranty/);
+    assert.match(content, /Care Instructions/);
+
+    // Variants table
+    assert.match(content, /Product Variants/);
   });
 });
 

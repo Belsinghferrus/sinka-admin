@@ -35,25 +35,22 @@ describe('Firebase Security & Environment Configuration Tests', () => {
     scanDir(path.resolve('src'));
   });
 
-  test('3. Tracked environment files (.env.development, .env.production, .env.example) do not contain hardcoded keys', () => {
-    const trackedEnvFiles = ['.env.development', '.env.production', '.env.example'];
-    for (const file of trackedEnvFiles) {
-      const filePath = path.resolve(file);
-      assert.ok(fs.existsSync(filePath), `${file} must exist`);
-      const content = fs.readFileSync(filePath, 'utf8');
-      assert.doesNotMatch(
-        content,
-        /AIza[0-9A-Za-z-_]{35}/,
-        `Hardcoded Google API key found in tracked environment file ${file}`
-      );
-    }
+  test('3. Tracked environment file (.env.example) does not contain hardcoded keys', () => {
+    const examplePath = path.resolve('.env.example');
+    assert.ok(fs.existsSync(examplePath), '.env.example must exist');
+    const content = fs.readFileSync(examplePath, 'utf8');
+    assert.doesNotMatch(
+      content,
+      /AIza[0-9A-Za-z-_]{35}/,
+      'Hardcoded Google API key found in .env.example'
+    );
   });
 
-  test('4. .gitignore protects .env.local from Git tracking', () => {
+  test('4. .gitignore protects .env and .env.* from Git tracking', () => {
     const gitignorePath = path.resolve('.gitignore');
     const content = fs.readFileSync(gitignorePath, 'utf8');
-    assert.match(content, /\.env\.local/);
-    assert.match(content, /\.env\.\*\.local/);
+    assert.match(content, /^\.env$/m);
+    assert.match(content, /^\.env\.\*$/m);
   });
 
   test('5. Firebase GoogleAuthProvider is configured to prompt account selection', () => {

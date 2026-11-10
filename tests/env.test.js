@@ -6,19 +6,18 @@ import { API_BASE_URL, BACKEND_URL } from '../src/config/env.js';
 import apiClient, { ADMIN_TOKEN_KEY, getAuthToken, setAuthToken, clearAuthToken } from '../src/lib/api.js';
 import serviceApiClient from '../src/services/api.js';
 
-describe('Vite Multi-Environment API Configuration Tests', () => {
-  test('1. .env.development defines local development backend URL on port 5001', () => {
-    const devEnvPath = path.resolve('.env.development');
-    assert.ok(fs.existsSync(devEnvPath), '.env.development must exist');
-    const content = fs.readFileSync(devEnvPath, 'utf8');
+describe('Vite Single .env Environment Configuration Tests', () => {
+  test('1. .env defines local development backend URL on port 5001', () => {
+    const envPath = path.resolve('.env');
+    assert.ok(fs.existsSync(envPath), '.env must exist locally');
+    const content = fs.readFileSync(envPath, 'utf8');
     assert.match(content, /VITE_API_BASE_URL=http:\/\/localhost:5001/);
   });
 
-  test('2. .env.production defines Render production backend URL', () => {
-    const prodEnvPath = path.resolve('.env.production');
-    assert.ok(fs.existsSync(prodEnvPath), '.env.production must exist');
-    const content = fs.readFileSync(prodEnvPath, 'utf8');
-    assert.match(content, /VITE_API_BASE_URL=https:\/\/sinka-backend-xxgb\.onrender\.com/);
+  test('2. Multiple environment files (.env.development, .env.production, .env.local) are removed', () => {
+    assert.ok(!fs.existsSync(path.resolve('.env.development')), '.env.development must not exist');
+    assert.ok(!fs.existsSync(path.resolve('.env.production')), '.env.production must not exist');
+    assert.ok(!fs.existsSync(path.resolve('.env.local')), '.env.local must not exist');
   });
 
   test('3. .env.example defines template with no secrets', () => {
@@ -26,23 +25,27 @@ describe('Vite Multi-Environment API Configuration Tests', () => {
     assert.ok(fs.existsSync(exampleEnvPath), '.env.example must exist');
     const content = fs.readFileSync(exampleEnvPath, 'utf8');
     assert.match(content, /VITE_API_BASE_URL=http:\/\/localhost:5001/);
-    assert.doesNotMatch(content, /secret|password|key.*=.+/i);
+    assert.doesNotMatch(content, /secret|password|AIza|key.*=.+/i);
   });
 
-  test('4. .gitignore protects local override environment files and generated reports', () => {
+  test('4. .gitignore protects .env and .env.* while allowing .env.example', () => {
     const gitignorePath = path.resolve('.gitignore');
     const content = fs.readFileSync(gitignorePath, 'utf8');
-    assert.match(content, /\.env\.local/);
-    assert.match(content, /\.env\.\*\.local/);
+    assert.match(content, /^\.env$/m);
+    assert.match(content, /^\.env\.\*$/m);
+    assert.match(content, /^!\.env\.example$/m);
     assert.match(content, /\*_REPORT\.txt/);
     assert.match(content, /\*_REPORT\.md/);
   });
 
   test('5. src/config/env.js normalizes BACKEND_URL and API_BASE_URL', () => {
-    // In Node test runner without env var, fallback is used
-    assert.ok(BACKEND_URL.startsWith('http://') || BACKEND_URL.startsWith('https://'));
+    assert.ok(BACKEND_URL === '' || BACKEND_URL.startsWith('http://') || BACKEND_URL.startsWith('https://'));
     assert.ok(API_BASE_URL.endsWith('/api'), 'API_BASE_URL must end with /api');
-    assert.equal(API_BASE_URL, `${BACKEND_URL}/api`);
+    if (BACKEND_URL) {
+      assert.equal(API_BASE_URL, `${BACKEND_URL}/api`);
+    } else {
+      assert.equal(API_BASE_URL, '/api');
+    }
   });
 
   test('6. apiClient uses centralized API_BASE_URL as its baseURL', () => {
