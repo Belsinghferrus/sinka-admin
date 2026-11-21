@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { PRODUCT_CATEGORIES, ROUTES } from '../../constants.js';
 import { formatCurrency } from '../../utils/formatCurrency.js';
+import { extractString } from '../../utils/productUtils.js';
 
 export function ProductDetailModal({ product, isOpen, onClose }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -47,15 +48,15 @@ export function ProductDetailModal({ product, isOpen, onClose }) {
 
   // Extract specifications (checking both nested specifications and top-level fields)
   const specs = product.specifications || {};
-  const material = specs.material || product.material;
-  const color = specs.color || product.color;
-  const finish = specs.finish || product.finish;
-  const dimensions = specs.dimensions || product.dimensions;
-  const weight = specs.weight || product.weight;
-  const assembly = specs.assembly || specs.assemblyRequired || product.assembly;
-  const warranty = specs.warranty || product.warranty;
-  const returnPolicy = specs.returnPolicy || product.returnPolicy;
-  const careInstructions = specs.careInstructions || product.careInstructions;
+  const material = extractString(specs.material || product.material);
+  const color = extractString(specs.color || product.color);
+  const finish = extractString(specs.finish || product.finish);
+  const dimensions = extractString(specs.dimensions || product.dimensions);
+  const weight = extractString(specs.weight || product.weight);
+  const assembly = extractString(specs.assembly || specs.assemblyRequired || product.assembly || product.assemblyInformation);
+  const warranty = extractString(specs.warranty || product.warranty);
+  const returnPolicy = extractString(specs.returnPolicy || product.returnPolicy);
+  const careInstructions = extractString(specs.careInstructions || product.careInstructions);
 
   const hasAnySpec = Boolean(
     material || color || finish || dimensions || weight || assembly || warranty || returnPolicy || careInstructions

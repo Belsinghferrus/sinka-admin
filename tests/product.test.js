@@ -306,18 +306,16 @@ describe('Product Service & Constants Unit Tests', () => {
     assert.match(content, /Variant name must be unique/);
   });
 
-  test('ProductFormPage provides dual-mode live storefront preview (Card View and Detailed Customer PDP)', () => {
+  test('ProductFormPage provides live storefront card preview and omits Detail PDP', () => {
     const productFormPath = path.resolve('src/pages/products/ProductFormPage.jsx');
     const content = fs.readFileSync(productFormPath, 'utf8');
 
-    // Dual mode buttons
-    assert.match(content, /Detail PDP/);
-    assert.match(content, /Card/);
+    // Storefront preview
+    assert.match(content, /Storefront Preview/);
+    assert.match(content, /Add to Cart/);
 
-    // Interactive PDP elements
-    assert.match(content, /Available Configurations:/);
-    assert.match(content, /Quick Specifications:/);
-    assert.match(content, /previewSelectedVariant/);
+    // Detail PDP preview removed per requirement
+    assert.doesNotMatch(content, /Detail PDP/);
   });
 
   test('ProductDetailModal renders structured specifications grid and variants table', () => {
@@ -333,6 +331,36 @@ describe('Product Service & Constants Unit Tests', () => {
 
     // Variants table
     assert.match(content, /Product Variants/);
+  });
+
+  test('extractString safely normalizes strings, objects, and prevents [object Object] crashes', async () => {
+    const { extractString } = await import('../src/utils/productUtils.js');
+
+    assert.equal(extractString('Solid Sheesham Wood'), 'Solid Sheesham Wood');
+    assert.equal(extractString('   Teak Wood   '), 'Teak Wood');
+    assert.equal(extractString('[object Object]'), '');
+    assert.equal(extractString(null), '');
+    assert.equal(extractString(undefined), '');
+    assert.equal(extractString(42), '42');
+
+    // Dimensions embedded subdocuments
+    assert.equal(
+      extractString({ length: null, width: null, height: null, unit: 'inches', formatted: '' }),
+      ''
+    );
+    assert.equal(
+      extractString({ length: 200, width: 180, height: 90, unit: 'cm' }),
+      '200 x 180 x 90 cm'
+    );
+    assert.equal(
+      extractString({ formatted: '82" L x 35" W x 32" H' }),
+      '82" L x 35" W x 32" H'
+    );
+
+    // Weight embedded subdocuments
+    assert.equal(extractString({ value: null, unit: 'kg', formatted: '' }), '');
+    assert.equal(extractString({ value: 48, unit: 'kg' }), '48 kg');
+    assert.equal(extractString({ formatted: '52 kg' }), '52 kg');
   });
 });
 

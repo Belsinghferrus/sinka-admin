@@ -22,6 +22,7 @@ export const ROUTES = {
   BANNERS: '/banners',
   BANNERS_NEW: '/banners/new',
   BANNERS_EDIT: '/banners/:id/edit',
+  REVIEWS: '/reviews',
 };
 
 export const NAVIGATION_ITEMS = [
@@ -40,6 +41,10 @@ export const NAVIGATION_ITEMS = [
   {
     name: 'Products',
     path: ROUTES.PRODUCTS,
+  },
+  {
+    name: 'Reviews',
+    path: ROUTES.REVIEWS,
   },
   {
     name: 'Promotional Offers',
@@ -325,6 +330,44 @@ export const ORDERS_ANALYTICS_RANGES = [
   { key: '30d', label: '30 Days' },
   { key: '90d', label: '90 Days' },
   { key: '1y', label: '1 Year' },
+];
+
+/**
+ * Customer Review Lifecycle Statuses for Sinka Admin Moderation.
+ */
+export const REVIEW_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];
+
+export const REVIEW_STATUS_CONFIG = {
+  PENDING: {
+    label: 'Pending',
+    badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
+    dotClass: 'bg-amber-500',
+    description: 'Awaiting moderation review.',
+  },
+  APPROVED: {
+    label: 'Approved',
+    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    dotClass: 'bg-emerald-500',
+    description: 'Approved for public storefront display.',
+  },
+  REJECTED: {
+    label: 'Rejected',
+    badgeClass: 'bg-rose-100 text-rose-800 border-rose-200',
+    dotClass: 'bg-rose-500',
+    description: 'Rejected and hidden from public storefront.',
+  },
+};
+
+/**
+ * Review Star Rating Filter Options.
+ */
+export const REVIEW_RATING_FILTERS = [
+  { value: 'all', label: 'All Ratings' },
+  { value: '5', label: '5 Stars' },
+  { value: '4', label: '4 Stars' },
+  { value: '3', label: '3 Stars' },
+  { value: '2', label: '2 Stars' },
+  { value: '1', label: '1 Star' },
 ];
 
 

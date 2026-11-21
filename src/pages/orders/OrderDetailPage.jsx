@@ -20,6 +20,7 @@ import {
   Mail,
   Send,
   Plus,
+  Lock,
 } from 'lucide-react';
 import orderService from '../../services/order.service.js';
 import Button from '../../components/ui/Button.jsx';
@@ -173,6 +174,7 @@ export function OrderDetailPage() {
   const allowedTransitions = getAllowedTransitions(order.status);
   const terminal = isTerminalStatus(order.status);
   const hasCourier = Boolean(order.courier && order.courier.trackingId);
+  const isLocked = terminal; // CANCELLED, REJECTED, DELIVERED are locked
 
   const getTransitionButtonVariant = (status) => {
     if (status === 'CANCELLED' || status === 'REJECTED') return 'secondary';
@@ -239,14 +241,16 @@ export function OrderDetailPage() {
 
         {/* Quick Header Actions */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsCourierModalOpen(true)}
-            icon={Truck}
-          >
-            {hasCourier ? 'Edit Tracking' : 'Assign Tracking'}
-          </Button>
+          {!isLocked && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCourierModalOpen(true)}
+              icon={Truck}
+            >
+              {hasCourier ? 'Edit Tracking' : 'Assign Tracking'}
+            </Button>
+          )}
 
           <Button
             variant="outline"
@@ -277,6 +281,16 @@ export function OrderDetailPage() {
             <span className="sr-only">Dismiss</span>
             &times;
           </button>
+        </div>
+      )}
+
+      {/* Locked Order Banner */}
+      {isLocked && (
+        <div className="p-4 bg-stone-50 border border-stone-300 rounded-lg flex items-center space-x-3 text-sm text-stone-600">
+          <Lock className="w-4 h-4 text-stone-500 shrink-0" />
+          <span>
+            This order is <strong className="text-stone-900">{order.status}</strong> and is permanently read-only. No further changes can be made.
+          </span>
         </div>
       )}
 
@@ -443,13 +457,21 @@ export function OrderDetailPage() {
               Courier Tracking Details
             </h2>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsCourierModalOpen(true)}
-          >
-            {hasCourier ? 'Update Tracking Details' : 'Assign Courier Tracking'}
-          </Button>
+          {!isLocked && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCourierModalOpen(true)}
+            >
+              {hasCourier ? 'Update Tracking Details' : 'Assign Courier Tracking'}
+            </Button>
+          )}
+          {isLocked && (
+            <span className="inline-flex items-center space-x-1 text-[11px] text-stone-500 font-medium px-2 py-1 bg-stone-100 rounded">
+              <Lock className="w-3 h-3" />
+              <span>Read-only</span>
+            </span>
+          )}
         </div>
 
         {hasCourier ? (
@@ -527,17 +549,21 @@ export function OrderDetailPage() {
           <div className="p-6 bg-stone-50/60 rounded-lg border border-stone-200/80 text-center">
             <Truck className="w-8 h-8 text-stone-300 mx-auto mb-2" />
             <p className="text-xs font-medium text-stone-700">No courier tracking assigned yet.</p>
-            <p className="text-[11px] text-stone-500 max-w-md mx-auto mt-0.5 mb-3">
-              When items are packed and dispatched, assign the courier name and AWB tracking number so customers receive shipment updates.
-            </p>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setIsCourierModalOpen(true)}
-              icon={Truck}
-            >
-              Assign Tracking &amp; Ship
-            </Button>
+            {!isLocked && (
+              <>
+                <p className="text-[11px] text-stone-500 max-w-md mx-auto mt-0.5 mb-3">
+                  When items are packed and dispatched, assign the courier name and AWB tracking number so customers receive shipment updates.
+                </p>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsCourierModalOpen(true)}
+                  icon={Truck}
+                >
+                  Assign Tracking &amp; Ship
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -770,28 +796,30 @@ export function OrderDetailPage() {
         </div>
 
         {/* Form to Append Note */}
-        <form onSubmit={handleAddAdminNote} className="space-y-2">
-          <textarea
-            rows={2}
-            value={adminNoteText}
-            onChange={(e) => setAdminNoteText(e.target.value)}
-            placeholder="Add an internal note visible only to back-office admins..."
-            className="w-full px-3 py-2 text-xs border border-stone-300 rounded-md shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-            maxLength={2000}
-          />
-          <div className="flex justify-end">
-            <Button
-              type="submit"
-              variant="outline"
-              size="sm"
-              isLoading={isSubmittingNote}
-              disabled={!adminNoteText.trim()}
-              icon={Plus}
-            >
-              Add Note
-            </Button>
-          </div>
-        </form>
+        {!isLocked && (
+          <form onSubmit={handleAddAdminNote} className="space-y-2">
+            <textarea
+              rows={2}
+              value={adminNoteText}
+              onChange={(e) => setAdminNoteText(e.target.value)}
+              placeholder="Add an internal note visible only to back-office admins..."
+              className="w-full px-3 py-2 text-xs border border-stone-300 rounded-md shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+              maxLength={2000}
+            />
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                variant="outline"
+                size="sm"
+                isLoading={isSubmittingNote}
+                disabled={!adminNoteText.trim()}
+                icon={Plus}
+              >
+                Add Note
+              </Button>
+            </div>
+          </form>
+        )}
 
         {/* Existing Notes List */}
         <div className="space-y-2.5 max-h-80 overflow-y-auto pt-2 border-t border-stone-100">
@@ -827,14 +855,16 @@ export function OrderDetailPage() {
       />
 
       {/* Courier Tracking Modal */}
-      <CourierTrackingModal
-        isOpen={isCourierModalOpen}
-        onClose={() => setIsCourierModalOpen(false)}
-        onSave={handleSaveTracking}
-        initialCourier={order.courier || {}}
-        orderNumber={order.orderNumber}
-        currentStatus={order.status}
-      />
+      {!isLocked && (
+        <CourierTrackingModal
+          isOpen={isCourierModalOpen}
+          onClose={() => setIsCourierModalOpen(false)}
+          onSave={handleSaveTracking}
+          initialCourier={order.courier || {}}
+          orderNumber={order.orderNumber}
+          currentStatus={order.status}
+        />
+      )}
     </div>
   );
 }

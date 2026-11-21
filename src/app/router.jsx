@@ -10,6 +10,7 @@ import OffersListPage from '../pages/offers/OffersListPage.jsx';
 import OfferFormPage from '../pages/offers/OfferFormPage.jsx';
 import BannersListPage from '../pages/banners/BannersListPage.jsx';
 import BannerFormPage from '../pages/banners/BannerFormPage.jsx';
+import ReviewsListPage from '../pages/reviews/ReviewsListPage.jsx';
 import NotFoundPage from '../pages/NotFoundPage.jsx';
 import ProtectedRoute from '../components/layout/ProtectedRoute.jsx';
 import { ROUTES } from '../constants.js';
@@ -77,6 +78,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.BANNERS_EDIT,
         element: <BannerFormPage />,
+      },
+      {
+        path: ROUTES.REVIEWS,
+        element: <ReviewsListPage />,
       },
     ],
   },

@@ -17,8 +17,6 @@ import {
   Trash2,
   Copy,
   Info,
-  CheckCircle2,
-  XCircle,
   FileText,
   ShieldCheck,
   RotateCcw,
@@ -31,6 +29,7 @@ import LoadingIndicator from '../../components/ui/LoadingIndicator.jsx';
 import ProductImageUploader from '../../components/products/ProductImageUploader.jsx';
 import { PRODUCT_CATEGORIES, ROUTES } from '../../constants.js';
 import { formatCurrency, parseCurrencyInput } from '../../utils/formatCurrency.js';
+import { extractString } from '../../utils/productUtils.js';
 
 /**
  * Reusable accessible toggle switch component.
@@ -136,11 +135,6 @@ export function ProductFormPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [autoSlug, setAutoSlug] = useState(!isEditing);
 
-  // Live preview interactive state
-  const [previewTab, setPreviewTab] = useState('card'); // 'card' | 'pdp'
-  const [previewSelectedVariant, setPreviewSelectedVariant] = useState(null);
-  const [previewActiveImageIndex, setPreviewActiveImageIndex] = useState(0);
-
   // ── Load product if editing ─────────────────────────────────────────────────
   useEffect(() => {
     if (!isEditing) return;
@@ -158,42 +152,50 @@ export function ProductFormPage() {
           const loadedVariants = Array.isArray(product.variants) ? product.variants : [];
 
           setFormData({
-            name: product.name || '',
-            slug: product.slug || '',
-            category: product.category || 'sofas',
-            shortDescription: product.shortDescription || '',
-            description: product.description || '',
+            name: extractString(product.name),
+            slug: extractString(product.slug),
+            category: extractString(product.category) || 'sofas',
+            shortDescription: extractString(product.shortDescription),
+            description: extractString(product.description),
             price: product.price != null ? String(product.price) : '',
             originalPrice: product.originalPrice != null ? String(product.originalPrice) : '',
             stock: product.stock != null ? String(product.stock) : '0',
-            sku: product.sku || '',
+            sku: extractString(product.sku),
             isActive: Boolean(product.isActive),
             isFeatured: Boolean(product.isFeatured),
-            images: Array.isArray(product.images) ? product.images : [],
+            images: Array.isArray(product.images)
+              ? product.images
+                  .map((img) => ({
+                    url: extractString(img.url),
+                    key: extractString(img.key),
+                    alt: extractString(img.alt),
+                  }))
+                  .filter((img) => img.url)
+              : [],
             // Specifications
-            material: specs.material || product.material || '',
-            color: specs.color || product.color || '',
-            finish: specs.finish || product.finish || '',
-            dimensions: specs.dimensions || product.dimensions || '',
-            weight: specs.weight || product.weight || '',
-            assembly: specs.assembly || specs.assemblyRequired || product.assembly || '',
-            warranty: specs.warranty || product.warranty || '',
-            returnPolicy: specs.returnPolicy || product.returnPolicy || '',
-            careInstructions: specs.careInstructions || product.careInstructions || '',
+            material: extractString(specs.material || product.material),
+            color: extractString(specs.color || product.color),
+            finish: extractString(specs.finish || product.finish),
+            dimensions: extractString(specs.dimensions || product.dimensions),
+            weight: extractString(specs.weight || product.weight),
+            assembly: extractString(specs.assembly || specs.assemblyRequired || product.assembly || product.assemblyInformation),
+            warranty: extractString(specs.warranty || product.warranty),
+            returnPolicy: extractString(specs.returnPolicy || product.returnPolicy),
+            careInstructions: extractString(specs.careInstructions || product.careInstructions),
             // Variants
             hasVariants: loadedVariants.length > 0,
             variants: loadedVariants.map((v, i) => ({
               id: v.id || v._id || `variant-${Date.now()}-${i}`,
-              name: v.name || '',
-              sku: v.sku || '',
+              name: extractString(v.name),
+              sku: extractString(v.sku),
               price: v.price != null ? String(v.price) : '',
               originalPrice: v.originalPrice != null ? String(v.originalPrice) : '',
               stock: v.stock != null ? String(v.stock) : '0',
-              color: v.color || '',
-              size: v.size || '',
-              material: v.material || '',
-              finish: v.finish || '',
-              image: v.image || v.imageUrl || '',
+              color: extractString(v.color),
+              size: extractString(v.size),
+              material: extractString(v.material),
+              finish: extractString(v.finish),
+              image: extractString(v.image || v.imageUrl),
               isAvailable: v.isAvailable !== false,
             })),
           });
@@ -328,11 +330,12 @@ export function ProductFormPage() {
   const validate = () => {
     const errors = {};
 
-    if (!formData.name.trim()) {
+    const nameStr = extractString(formData.name);
+    if (!nameStr) {
       errors.name = 'Product name is required.';
-    } else if (formData.name.trim().length < 2) {
+    } else if (nameStr.length < 2) {
       errors.name = 'Product name must be at least 2 characters.';
-    } else if (formData.name.trim().length > 200) {
+    } else if (nameStr.length > 200) {
       errors.name = 'Product name cannot exceed 200 characters.';
     }
 
@@ -361,25 +364,28 @@ export function ProductFormPage() {
       errors.stock = 'Stock must be a non-negative whole integer.';
     }
 
-    if (formData.sku && formData.sku.length > 50) {
+    const skuStr = extractString(formData.sku);
+    if (skuStr && skuStr.length > 50) {
       errors.sku = 'SKU cannot exceed 50 characters.';
     }
 
-    if (formData.shortDescription && formData.shortDescription.length > 300) {
+    const shortDescStr = extractString(formData.shortDescription);
+    if (shortDescStr && shortDescStr.length > 300) {
       errors.shortDescription = 'Short description cannot exceed 300 characters.';
     }
 
     // Variant Validation
     if (formData.hasVariants) {
-      if (formData.variants.length === 0) {
+      if (!Array.isArray(formData.variants) || formData.variants.length === 0) {
         errors.variants = 'Please add at least one variant or disable the variants toggle.';
       } else {
         const seenNames = new Set();
         formData.variants.forEach((v, idx) => {
-          if (!v.name.trim()) {
+          const vName = extractString(v.name);
+          if (!vName) {
             errors[`variant_${idx}_name`] = 'Variant name is required.';
           } else {
-            const normalized = v.name.trim().toLowerCase();
+            const normalized = vName.toLowerCase();
             if (seenNames.has(normalized)) {
               errors[`variant_${idx}_name`] = 'Variant name must be unique.';
             } else {
@@ -415,80 +421,103 @@ export function ProductFormPage() {
     setIsSubmitting(true);
     setError(null);
 
-    const parsedPrice = parseCurrencyInput(formData.price);
-    const parsedOriginalPrice =
-      formData.originalPrice !== '' && formData.originalPrice != null
-        ? parseCurrencyInput(formData.originalPrice)
-        : null;
-
-    // Structured Specifications Object
-    const specs = {
-      material: formData.material.trim(),
-      color: formData.color.trim(),
-      finish: formData.finish.trim(),
-      dimensions: formData.dimensions.trim(),
-      weight: formData.weight.trim(),
-      assembly: formData.assembly.trim(),
-      warranty: formData.warranty.trim(),
-      returnPolicy: formData.returnPolicy.trim(),
-      careInstructions: formData.careInstructions.trim(),
-    };
-
-    // Construct Payload (variants is always an array, never null)
-    const payload = {
-      name: formData.name.trim(),
-      slug: formData.slug.trim() || slugify(formData.name),
-      category: formData.category,
-      shortDescription: formData.shortDescription.trim(),
-      description: formData.description.trim(),
-      price: parsedPrice,
-      originalPrice: parsedOriginalPrice,
-      stock: Number(formData.stock),
-      sku: formData.sku.trim() || null,
-      isActive: Boolean(formData.isActive),
-      isFeatured: Boolean(formData.isFeatured),
-      // Top-level aliases for backwards compatibility with all consumers
-      material: specs.material,
-      color: specs.color,
-      finish: specs.finish,
-      dimensions: specs.dimensions,
-      weight: specs.weight,
-      assembly: specs.assembly,
-      warranty: specs.warranty,
-      returnPolicy: specs.returnPolicy,
-      careInstructions: specs.careInstructions,
-      specifications: specs,
-      images: formData.images.map((img) => ({
-        url: img.url,
-        key: img.key,
-        alt: img.alt ? img.alt.trim() : '',
-      })),
-      variants:
-        formData.hasVariants && formData.variants.length > 0
-          ? formData.variants.map((v) => ({
-              name: v.name.trim(),
-              sku: v.sku.trim() || undefined,
-              price: parseCurrencyInput(v.price) || 0,
-              originalPrice:
-                v.originalPrice !== '' && v.originalPrice != null
-                  ? parseCurrencyInput(v.originalPrice)
-                  : null,
-              stock: Number(v.stock) || 0,
-              color: v.color.trim() || undefined,
-              size: v.size.trim() || undefined,
-              material: v.material.trim() || undefined,
-              finish: v.finish.trim() || undefined,
-              image: v.image ? v.image.trim() : undefined,
-              isAvailable: Boolean(v.isAvailable),
-            }))
-          : [],
-    };
-
-    if (payload.images.length > 0) {
-      payload.thumbnail = payload.images[0].url;
-    }
-
     try {
+      const parsedPrice = parseCurrencyInput(formData.price);
+      const parsedOriginalPrice =
+        formData.originalPrice !== '' && formData.originalPrice != null
+          ? parseCurrencyInput(formData.originalPrice)
+          : null;
+
+      const cleanDimensions = extractString(formData.dimensions);
+      const cleanWeight = extractString(formData.weight);
+      const cleanMaterial = extractString(formData.material);
+      const cleanColor = extractString(formData.color);
+      const cleanFinish = extractString(formData.finish);
+      const cleanAssembly = extractString(formData.assembly);
+      const cleanWarranty = extractString(formData.warranty);
+      const cleanReturnPolicy = extractString(formData.returnPolicy);
+      const cleanCareInstructions = extractString(formData.careInstructions);
+      const cleanSku = extractString(formData.sku);
+
+      // Structured Specifications Object
+      const specs = {
+        material: cleanMaterial,
+        color: cleanColor,
+        finish: cleanFinish,
+        dimensions: cleanDimensions,
+        weight: cleanWeight,
+        assembly: cleanAssembly,
+        warranty: cleanWarranty,
+        returnPolicy: cleanReturnPolicy,
+        careInstructions: cleanCareInstructions,
+      };
+
+      // Construct Payload (variants is always an array, never null)
+      const payload = {
+        name: extractString(formData.name),
+        slug: extractString(formData.slug) || slugify(formData.name),
+        category: formData.category,
+        shortDescription: extractString(formData.shortDescription),
+        description: extractString(formData.description),
+        price: parsedPrice,
+        originalPrice: parsedOriginalPrice,
+        stock: Number(formData.stock) || 0,
+        sku: cleanSku || null,
+        isActive: Boolean(formData.isActive),
+        isFeatured: Boolean(formData.isFeatured),
+        // Top-level aliases for backwards compatibility with all consumers
+        material: cleanMaterial,
+        color: cleanColor,
+        finish: cleanFinish,
+        dimensions: cleanDimensions || undefined,
+        weight: cleanWeight || undefined,
+        assembly: cleanAssembly,
+        assemblyInformation: cleanAssembly,
+        warranty: cleanWarranty,
+        returnPolicy: cleanReturnPolicy,
+        careInstructions: cleanCareInstructions,
+        specifications: specs,
+        images: (formData.images || [])
+          .filter((img) => img && img.url)
+          .map((img, idx) => {
+            const url = extractString(img.url);
+            let key = extractString(img.key);
+            if (!key && url.includes('/products/')) {
+              key = 'products/' + url.split('/products/')[1].split('?')[0];
+            }
+            return {
+              url,
+              key: key || `products/${Date.now()}-${idx}.webp`,
+              alt: extractString(img.alt),
+              isPrimary: Boolean(img.isPrimary || idx === 0),
+            };
+          }),
+        variants:
+          formData.hasVariants && Array.isArray(formData.variants) && formData.variants.length > 0
+            ? formData.variants.map((v) => ({
+                id: v.id && !v.id.startsWith('variant-') ? v.id : undefined,
+                name: extractString(v.name),
+                sku: extractString(v.sku) || undefined,
+                price: parseCurrencyInput(v.price) || 0,
+                originalPrice:
+                  v.originalPrice !== '' && v.originalPrice != null
+                    ? parseCurrencyInput(v.originalPrice)
+                    : null,
+                stock: Number(v.stock) || 0,
+                color: extractString(v.color) || undefined,
+                size: extractString(v.size) || undefined,
+                material: extractString(v.material) || undefined,
+                finish: extractString(v.finish) || undefined,
+                image: extractString(v.image) || undefined,
+                isAvailable: Boolean(v.isAvailable),
+              }))
+            : [],
+      };
+
+      if (payload.images.length > 0) {
+        payload.thumbnail = payload.images[0].url;
+      }
+
       if (isEditing) {
         await productService.updateProduct(id, payload);
       } else {
@@ -496,7 +525,12 @@ export function ProductFormPage() {
       }
       navigate(ROUTES.PRODUCTS);
     } catch (err) {
-      let friendlyMessage = err.message || `Failed to ${isEditing ? 'update' : 'create'} product.`;
+      console.error('Failed to save product:', err);
+      let friendlyMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error?.message ||
+        err.message ||
+        `Failed to ${isEditing ? 'update' : 'create'} product.`;
       if (friendlyMessage.includes('duplicate key') || friendlyMessage.includes('E11000')) {
         friendlyMessage = 'A product with this name, slug, or SKU already exists. Please adjust and retry.';
       }
@@ -518,7 +552,7 @@ export function ProductFormPage() {
   // ── Derived Preview Values ──────────────────────────────────────────────────
   const activeVariant =
     formData.hasVariants && formData.variants.length > 0
-      ? formData.variants.find((v) => v.id === previewSelectedVariant) || formData.variants[0]
+      ? formData.variants[0]
       : null;
 
   const currentPrice = activeVariant
@@ -536,7 +570,6 @@ export function ProductFormPage() {
 
   const coverImage =
     (activeVariant?.image && activeVariant.image.trim()) ||
-    formData.images[previewActiveImageIndex]?.url ||
     formData.images[0]?.url;
 
   const currentCategoryObj = PRODUCT_CATEGORIES.find((c) => c.value === formData.category);
@@ -1388,36 +1421,9 @@ export function ProductFormPage() {
                 </span>
               </div>
 
-              {/* Preview View Mode Switcher */}
-              <div className="flex items-center bg-stone-200/70 p-0.5 rounded text-[10px] font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setPreviewTab('card')}
-                  className={`px-2 py-0.5 rounded transition-colors ${
-                    previewTab === 'card'
-                      ? 'bg-white text-stone-900 shadow-2xs'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  Card
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPreviewTab('pdp')}
-                  className={`px-2 py-0.5 rounded transition-colors ${
-                    previewTab === 'pdp'
-                      ? 'bg-white text-stone-900 shadow-2xs'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  Detail PDP
-                </button>
-              </div>
             </div>
 
             <div className="p-3.5">
-              {/* MODE A: CATALOG CARD VIEW */}
-              {previewTab === 'card' && (
                 <div className="rounded-lg border border-stone-200 overflow-hidden bg-white shadow-2xs">
                   {/* Product Image Area */}
                   <div className="relative aspect-4/3 bg-stone-100 overflow-hidden">
@@ -1506,153 +1512,6 @@ export function ProductFormPage() {
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* MODE B: CUSTOMER DETAILED PRODUCT PAGE PREVIEW */}
-              {previewTab === 'pdp' && (
-                <div className="rounded-lg border border-stone-200 overflow-hidden bg-white shadow-2xs p-3 space-y-3 text-xs">
-                  {/* Hero Image & Thumbnails */}
-                  <div className="space-y-1.5">
-                    <div className="relative aspect-4/3 bg-stone-100 rounded-md overflow-hidden">
-                      {coverImage ? (
-                        <img
-                          src={coverImage}
-                          alt="PDP Preview"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-stone-400">
-                          <ImageIcon className="w-6 h-6 mb-1 text-stone-300" />
-                          <span className="text-[10px]">No image uploaded</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Mini Thumbnails */}
-                    {formData.images.length > 1 && (
-                      <div className="flex space-x-1.5 overflow-x-auto pb-1">
-                        {formData.images.map((img, idx) => (
-                          <button
-                            key={img.key || idx}
-                            type="button"
-                            onClick={() => {
-                              setPreviewActiveImageIndex(idx);
-                              setPreviewSelectedVariant(null);
-                            }}
-                            className={`w-10 h-10 rounded border overflow-hidden shrink-0 transition-all ${
-                              previewActiveImageIndex === idx && !previewSelectedVariant
-                                ? 'border-brand-primary ring-1 ring-brand-primary/40'
-                                : 'border-stone-200 opacity-60'
-                            }`}
-                          >
-                            <img src={img.url} alt="" className="w-full h-full object-cover" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Title & Pricing */}
-                  <div>
-                    <span className="text-[10px] uppercase font-semibold text-brand-primary block tracking-wider">
-                      {currentCategoryObj?.label || 'Furniture'}
-                    </span>
-                    <h4 className="font-heading font-bold text-sm text-stone-900 leading-snug">
-                      {formData.name || 'Product Title'}
-                    </h4>
-
-                    <div className="flex items-baseline space-x-2 mt-1">
-                      <span className="font-heading font-bold text-base text-stone-900">
-                        {formatCurrency(currentPrice)}
-                      </span>
-                      {hasDiscount && (
-                        <>
-                          <span className="text-xs text-stone-400 line-through">
-                            {formatCurrency(originalPriceNum)}
-                          </span>
-                          <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded">
-                            Save {formatCurrency(originalPriceNum - currentPrice)}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Stock Availability */}
-                  <div className="pt-0.5">
-                    {isOutOfStock ? (
-                      <span className="inline-flex items-center text-[11px] font-semibold text-red-600">
-                        <XCircle className="w-3 h-3 mr-1" /> Currently Out of Stock
-                      </span>
-                    ) : isLowStock ? (
-                      <span className="inline-flex items-center text-[11px] font-semibold text-amber-700">
-                        <AlertCircle className="w-3 h-3 mr-1" /> Only {displayStock} left in stock
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center text-[11px] font-semibold text-emerald-700">
-                        <CheckCircle2 className="w-3 h-3 mr-1" /> In Stock ({displayStock} units available)
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Interactive Variant Selection Pills (if enabled) */}
-                  {formData.hasVariants && formData.variants.length > 0 && (
-                    <div className="pt-1 space-y-1 border-t border-stone-100">
-                      <label className="text-[10px] uppercase font-bold text-stone-500 block">
-                        Available Configurations:
-                      </label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {formData.variants.map((v) => {
-                          const isSelected =
-                            v.id === previewSelectedVariant ||
-                            (!previewSelectedVariant && v.id === formData.variants[0]?.id);
-                          return (
-                            <button
-                              key={v.id}
-                              type="button"
-                              onClick={() => setPreviewSelectedVariant(v.id)}
-                              className={`px-2 py-1 rounded text-[10px] font-medium border transition-all ${
-                                isSelected
-                                  ? 'border-brand-primary bg-brand-primary text-white shadow-2xs'
-                                  : 'border-stone-300 bg-stone-50 text-stone-700 hover:border-stone-400'
-                              }`}
-                            >
-                              {v.name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Specifications Snapshot */}
-                  {(formData.material || formData.dimensions || formData.warranty) && (
-                    <div className="p-2 bg-stone-50 rounded border border-stone-200 text-[10px] space-y-1">
-                      <span className="font-semibold text-stone-700 block uppercase tracking-wider">
-                        Quick Specifications:
-                      </span>
-                      {formData.material && (
-                        <div className="flex justify-between">
-                          <span className="text-stone-500">Material:</span>
-                          <span className="font-medium text-stone-800">{formData.material}</span>
-                        </div>
-                      )}
-                      {formData.dimensions && (
-                        <div className="flex justify-between">
-                          <span className="text-stone-500">Dimensions:</span>
-                          <span className="font-mono text-stone-800">{formData.dimensions}</span>
-                        </div>
-                      )}
-                      {formData.warranty && (
-                        <div className="flex justify-between">
-                          <span className="text-stone-500">Warranty:</span>
-                          <span className="font-medium text-stone-800">{formData.warranty}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
 
               <p className="text-[10px] text-stone-400 text-center mt-2 leading-relaxed">
                 Live interactive customer storefront preview.

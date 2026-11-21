@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Image as ImageIcon, Package, Tag, ShieldCheck, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Image as ImageIcon, Package, Tag, ShieldCheck, X, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { ROUTES } from '../../constants.js';
 
@@ -47,6 +47,11 @@ export function Sidebar({ isOpen, onClose }) {
       name: 'Products',
       path: ROUTES.PRODUCTS,
       icon: Package,
+    },
+    {
+      name: 'Reviews',
+      path: ROUTES.REVIEWS,
+      icon: MessageSquare,
     },
     {
       name: 'Promotional Offers',
